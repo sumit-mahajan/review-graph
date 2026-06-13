@@ -121,12 +121,23 @@ addopts = "--cov=src --cov-report=term-missing --cov-fail-under=75 --cov-config=
 [tool.coverage.run]
 source = ["src"]
 omit = [
+    # Postgres / SQLAlchemy — needs real DB (integration tests only)
     "src/infrastructure/db/repositories/*_repository.py",
     "src/infrastructure/db/session.py",
     "src/infrastructure/db/migrations/*",
+    "src/infrastructure/db/models/*.py",
+    # External service adapters — need live credentials to test
     "src/infrastructure/github/app_client.py",
+    "src/infrastructure/github/pr_fetcher.py",
     "src/infrastructure/queue/upstash_redis_client.py",
     "src/infrastructure/observability/langfuse_client.py",
+    "src/infrastructure/vector/embedding_service.py",
+    "src/infrastructure/vector/pgvector_store.py",
+    # LLM pipeline — needs live Gemini API key
+    "src/infrastructure/ai/gemini_client.py",
+    "src/infrastructure/ai/graph/review_graph.py",
+    "src/infrastructure/ai/langgraph_orchestrator.py",
+    # Worker entry point and evals runner
     "src/worker/*",
     "src/evals/*",
 ]

@@ -9,6 +9,7 @@ from uuid import UUID
 
 import structlog
 
+from application.use_cases.assemble_review_package import AssembleReviewPackageUseCase
 from domain.repositories.i_job_repository import IJobRepository
 from domain.services.i_agent_orchestrator import IAgentOrchestrator, OrchestratorResult
 from domain.value_objects.agent_type import AgentType
@@ -20,10 +21,18 @@ from infrastructure.ai.agents.synthesis_agent import SynthesisAgent
 from infrastructure.ai.agents.test_agent import TestAgent
 from infrastructure.ai.gemini_client import GeminiClient
 from infrastructure.ai.graph.review_graph import build_review_graph
-from infrastructure.ai.graph.state import ChangedFile, PRMetadata, ReviewState
+from infrastructure.ai.graph.state import ReviewState
 from infrastructure.observability.langfuse_client import ILangfuseClient, NoOpLangfuseClient
 
 logger = structlog.get_logger()
+
+# RAG queries per agent — used to populate rag_chunks before each agent runs
+_RAG_QUERIES: dict[str, str] = {
+    "security": "authentication authorization input validation secrets injection SQL",
+    "perf": "database query loop iteration async await N+1 index",
+    "arch": "import class hierarchy module dependency layer interface",
+    "test": "test assert mock fixture unit test coverage",
+}
 
 
 class LanggraphOrchestrator(IAgentOrchestrator):
@@ -31,10 +40,12 @@ class LanggraphOrchestrator(IAgentOrchestrator):
         self,
         gemini: GeminiClient,
         job_repo: IJobRepository,
+        assembler: AssembleReviewPackageUseCase | None = None,
         langfuse: ILangfuseClient | None = None,
     ) -> None:
         self._gemini = gemini
         self._job_repo = job_repo
+        self._assembler = assembler
         self._langfuse = langfuse or NoOpLangfuseClient()
 
         supervisor = SupervisorAgent(gemini)
@@ -57,24 +68,49 @@ class LanggraphOrchestrator(IAgentOrchestrator):
         trace_id = self._langfuse.start_trace("review_pipeline", job_id=job_id)
         await log.ainfo("pipeline_started", trace_id=trace_id)
 
+        # F-03: Assemble Review Package (diff fetch + tree-sitter parse)
+        context_units = []
+        raw_diff_chunks = []
+        pr_metadata_override = None
+
+        if self._assembler is not None:
+            try:
+                pr_metadata_override, context_units, raw_diff_chunks = (
+                    await self._assembler.execute(
+                        repository_id=job.repository_id,
+                        pr_number=job.pr_number,
+                        pr_title=job.pr_title,
+                        pr_author=job.pr_author,
+                        pr_url=job.pr_url,
+                        base_sha=job.base_sha,
+                        head_sha=job.head_sha,
+                    )
+                )
+            except Exception as exc:  # noqa: BLE001
+                await log.awarning("review_package_assembly_failed", error=str(exc))
+                # Degrade gracefully — proceed with empty context units
+
+        from infrastructure.ai.graph.state import PRMetadata  # noqa: PLC0415
+        pr_metadata = pr_metadata_override or PRMetadata(
+            pr_number=job.pr_number,
+            title=job.pr_title,
+            author=job.pr_author,
+            pr_url=job.pr_url,
+            base_sha=job.base_sha,
+            head_sha=job.head_sha,
+            base_branch="main",
+            head_branch="feature",
+            changed_files=[],
+        )
+
         initial_state: ReviewState = {
             "job_id": job_id,
             "repository_id": job.repository_id,
             "trace_id": trace_id,
-            "pr_metadata": PRMetadata(
-                pr_number=job.pr_number,
-                title=job.pr_title,
-                author=job.pr_author,
-                pr_url=job.pr_url,
-                base_sha=job.base_sha,
-                head_sha=job.head_sha,
-                base_branch="main",    # enriched in F-03 from GitHub API
-                head_branch="feature", # enriched in F-03 from GitHub API
-                changed_files=[],      # enriched in F-03 from GitHub API
-            ),
-            "context_units": [],       # enriched in F-03 (tree-sitter)
-            "raw_diff_chunks": [],     # enriched in F-03 (GitHub diff fetch)
-            "rag_chunks": {},          # enriched in F-03 (pgvector)
+            "pr_metadata": pr_metadata,
+            "context_units": context_units,
+            "raw_diff_chunks": raw_diff_chunks,
+            "rag_chunks": {},
             "active_agents": [],
             "findings": [],
             "summary": None,

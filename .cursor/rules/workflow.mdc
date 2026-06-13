@@ -194,13 +194,19 @@ Use `fix:` for bug fixes. One logical change per commit.
 ## Proceed Protocol
 
 When the user says "proceed", "proceed to next", or "continue" **meaning advance to the
-next build step**:
+next build step**, this means: "I have reviewed and approve the work shown above — commit
+it and build the next feature."
 
-1. **Commit first** — only if there are uncommitted changes from the step just completed.
-   Stage and commit with a clear message (see Commit Policy above).
-   Do not start the next step until the commit succeeds.
-2. **Then start the next step** — begin immediately after the commit, without waiting for
-   additional confirmation.
+1. **Commit the approved work** — stage and commit only the work the user just reviewed.
+   Do not start the next feature until the commit succeeds.
+2. **Build the next feature** — implement contracts → tests → implementation.
+3. **STOP when the feature is complete** — do NOT commit automatically. Instead:
+   - Run the reviewer.mdc checklist against `git diff HEAD` (non-staged changes)
+   - Present the checklist results and a brief summary to the user
+   - Wait for explicit approval before committing
+
+"Proceed" approves the *previous* feature. The *next* feature always needs its own
+review+approval cycle before it is committed.
 
 If the user says "continue" while reviewing or discussing (not advancing the build),
 do **not** commit — ask what they want to do next.
