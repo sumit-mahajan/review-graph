@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 
 import { useAuthStore } from '@/features/auth/store/authStore';
@@ -11,13 +11,19 @@ export function CallbackPage() {
   const navigate = useNavigate();
   const setAuth = useAuthStore((s) => s.setAuth);
 
+  const exchanged = useRef(false);
+
   useEffect(() => {
+    if (exchanged.current) return;
+
     const code = params.get('code');
     const state = params.get('state');
     if (!code || !state) {
       navigate('/login');
       return;
     }
+
+    exchanged.current = true;
 
     apiClient
       .get<AuthTokenDTO>('/auth/callback', { params: { code, state } })

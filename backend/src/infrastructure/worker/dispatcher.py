@@ -20,6 +20,15 @@ logger = structlog.get_logger()
 BACKOFF_DELAYS = [2, 8, 32]
 
 
+def _parse_uuid(value: object, *, field: str) -> UUID | None:
+    if value is None:
+        return None
+    try:
+        return UUID(str(value))
+    except ValueError:
+        return None
+
+
 class WorkerDispatcher:
     def __init__(
         self,
@@ -62,7 +71,10 @@ class WorkerDispatcher:
             await logger.aerror("worker_review_missing_job_id")
             return True
 
-        job_id = UUID(str(job_id_raw))
+        job_id = _parse_uuid(job_id_raw, field="job_id")
+        if job_id is None:
+            await logger.aerror("worker_review_invalid_job_id", job_id=job_id_raw)
+            return True
         attempt = int(payload.get("attempt", 0))
 
         # Backoff before retry (skip on first attempt)
@@ -82,6 +94,9 @@ class WorkerDispatcher:
             await logger.aerror("worker_cleanup_missing_fields", payload=payload)
             return True
 
-        repository_id = UUID(str(repo_id_raw))
+        repository_id = _parse_uuid(repo_id_raw, field="repository_id")
+        if repository_id is None:
+            await logger.aerror("worker_cleanup_invalid_repository_id", repository_id=repo_id_raw)
+            return True
         await self._cleanup.cleanup_for_pr(repository_id, head_sha)
         return True

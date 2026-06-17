@@ -18,6 +18,8 @@ from infrastructure.db.session import create_session_factory
 from infrastructure.github.app_client import GithubAppClient
 from infrastructure.github.webhook_signature import GithubWebhookSignatureValidator
 from infrastructure.queue.upstash_redis_client import UpstashRedisClient
+from infrastructure.queue.wake_on_enqueue_queue_client import WakeOnEnqueueQueueClient
+from infrastructure.queue.worker_wake_client import HttpWorkerWakeClient, NoOpWorkerWakeClient
 
 
 @dataclass
@@ -51,11 +53,17 @@ def build_container() -> AppContainer:
     settings = get_settings()
     session_factory = create_session_factory(settings)
 
-    queue_client: IQueueClient = UpstashRedisClient(
+    redis_queue = UpstashRedisClient(
         redis_url=settings.upstash_redis_url,
         redis_token=settings.upstash_redis_token,
         stream_name=settings.redis_queue_stream,
     )
+    wake_client = (
+        HttpWorkerWakeClient(settings.worker_wake_url, settings.worker_wake_secret)
+        if settings.worker_wake_url and settings.worker_wake_secret
+        else NoOpWorkerWakeClient()
+    )
+    queue_client: IQueueClient = WakeOnEnqueueQueueClient(redis_queue, wake_client)
 
     signature_validator = GithubWebhookSignatureValidator(
         webhook_secret=settings.github_webhook_secret

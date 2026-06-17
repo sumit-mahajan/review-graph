@@ -2,13 +2,14 @@
 LangGraph StateGraph for the multi-agent review pipeline.
 
 Flow:
-  START → supervisor → fan-out to active agents (parallel) → synthesis → END
+  START → supervisor → specialists (sequential active agents) → synthesis → END
 
-Each node is a pure state transformer that receives ReviewState and returns ReviewState.
+Specialist agents run sequentially in one node so findings accumulate reliably
+before synthesis (parallel fan-out caused synthesis to run with partial/empty state).
 """
 from __future__ import annotations
 
-from typing import Literal
+from collections.abc import Awaitable, Callable
 
 from langgraph.graph import END, START, StateGraph
 
@@ -21,6 +22,31 @@ from infrastructure.ai.agents.synthesis_agent import SynthesisAgent
 from infrastructure.ai.agents.test_agent import TestAgent
 from infrastructure.ai.graph.state import ReviewState
 
+AgentRunner = Callable[[ReviewState], Awaitable[ReviewState]]
+
+
+def _make_specialists_runner(
+    security: SecurityAgent,
+    perf: PerfAgent,
+    arch: ArchAgent,
+    test: TestAgent,
+) -> AgentRunner:
+    runners: dict[AgentType, AgentRunner] = {
+        AgentType.SECURITY: security.run,
+        AgentType.PERF: perf.run,
+        AgentType.ARCH: arch.run,
+        AgentType.TEST: test.run,
+    }
+
+    async def run_specialists(state: ReviewState) -> ReviewState:
+        for agent_type in state.get("active_agents", list(AgentType)):
+            runner = runners.get(agent_type)
+            if runner is not None:
+                state = await runner(state)
+        return state
+
+    return run_specialists
+
 
 def build_review_graph(
     supervisor: SupervisorAgent,
@@ -32,38 +58,16 @@ def build_review_graph(
 ) -> StateGraph:
     graph = StateGraph(ReviewState)
 
-    # Register nodes
     graph.add_node("supervisor", supervisor.run)
-    graph.add_node("security", security.run)
-    graph.add_node("perf", perf.run)
-    graph.add_node("arch", arch.run)
-    graph.add_node("test", test.run)
+    graph.add_node(
+        "specialists",
+        _make_specialists_runner(security, perf, arch, test),
+    )
     graph.add_node("synthesis", synthesis.run)
 
-    # START → supervisor
     graph.add_edge(START, "supervisor")
-
-    # supervisor → conditional fan-out to active agents
-    def route_from_supervisor(state: ReviewState) -> list[str]:
-        agent_map = {
-            AgentType.SECURITY: "security",
-            AgentType.PERF: "perf",
-            AgentType.ARCH: "arch",
-            AgentType.TEST: "test",
-        }
-        return [agent_map[a] for a in state.get("active_agents", []) if a in agent_map]
-
-    graph.add_conditional_edges(
-        "supervisor",
-        route_from_supervisor,
-        ["security", "perf", "arch", "test"],
-    )
-
-    # All specialist agents → synthesis
-    for node in ["security", "perf", "arch", "test"]:
-        graph.add_edge(node, "synthesis")
-
-    # synthesis → END
+    graph.add_edge("supervisor", "specialists")
+    graph.add_edge("specialists", "synthesis")
     graph.add_edge("synthesis", END)
 
     return graph

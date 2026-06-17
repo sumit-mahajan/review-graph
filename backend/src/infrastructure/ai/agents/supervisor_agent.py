@@ -31,5 +31,8 @@ class SupervisorAgent:
         ]
         if not active:
             active = list(AgentType)  # fallback: run all agents
+        elif len(state["pr_metadata"].changed_files) > 0 and len(active) == 1:
+            # Supervisor under-routed — run all agents when code files changed
+            active = list(AgentType)
 
         return {**state, "active_agents": active}  # type: ignore[return-value]

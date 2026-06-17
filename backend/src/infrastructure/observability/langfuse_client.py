@@ -72,26 +72,45 @@ class NoOpLangfuseClient(ILangfuseClient):
 
 
 class LangfuseClient(ILangfuseClient):
-    """Real Langfuse client backed by the langfuse Python SDK."""
+    """Real Langfuse client backed by the langfuse Python SDK (v4+)."""
 
     def __init__(self, public_key: str, secret_key: str, host: str) -> None:
         from langfuse import Langfuse  # lazy import — optional dependency
 
         self._lf = Langfuse(public_key=public_key, secret_key=secret_key, host=host)
-        self._traces: dict[str, Any] = {}
+        self._trace_contexts: dict[str, Any] = {}
+        self._root_spans: dict[str, Any] = {}
         self._spans: dict[str, Any] = {}
 
     def start_trace(self, name: str, job_id: UUID, metadata: dict[str, Any] | None = None) -> str:
-        trace = self._lf.trace(name=name, metadata={"job_id": str(job_id), **(metadata or {})})
-        trace_id = trace.id
-        self._traces[trace_id] = trace
+        from langfuse.types import TraceContext  # lazy import — optional dependency
+
+        trace_id = self._lf.create_trace_id()
+        trace_context = TraceContext(trace_id=trace_id)
+        root_span = self._lf.start_observation(
+            trace_context=trace_context,
+            name=name,
+            as_type="span",
+            metadata={"job_id": str(job_id), **(metadata or {})},
+        )
+        self._trace_contexts[trace_id] = trace_context
+        self._root_spans[trace_id] = root_span
         return trace_id
 
     def start_span(
         self, trace_id: str, name: str, metadata: dict[str, Any] | None = None
     ) -> SpanContext:
-        trace = self._traces.get(trace_id)
-        span = (trace or self._lf).span(name=name, metadata=metadata or {})
+        from langfuse.types import TraceContext  # lazy import — optional dependency
+
+        trace_context = self._trace_contexts.get(trace_id)
+        if trace_context is None:
+            trace_context = TraceContext(trace_id=trace_id)
+        span = self._lf.start_observation(
+            trace_context=trace_context,
+            name=name,
+            as_type="span",
+            metadata=metadata or {},
+        )
         ctx = SpanContext(trace_id=trace_id, span_id=span.id, name=name)
         self._spans[span.id] = span
         return ctx
@@ -104,13 +123,21 @@ class LangfuseClient(ILangfuseClient):
         error: str | None = None,
     ) -> None:
         span = self._spans.pop(ctx.span_id, None)
-        if span is not None:
-            span.end(output=output, level="ERROR" if error else "DEFAULT", status_message=error)
+        if span is None:
+            return
+        if output is not None:
+            span.update(output=output)
+        if error is not None:
+            span.update(level="ERROR", status_message=error)
+        span.end()
 
     def end_trace(self, trace_id: str, *, output: dict[str, Any] | None = None) -> None:
-        trace = self._traces.pop(trace_id, None)
-        if trace is not None:
-            trace.update(output=output)
+        root_span = self._root_spans.pop(trace_id, None)
+        if root_span is not None:
+            if output is not None:
+                root_span.update(output=output)
+            root_span.end()
+        self._trace_contexts.pop(trace_id, None)
         self._lf.flush()
 
 

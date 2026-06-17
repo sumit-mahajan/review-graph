@@ -49,7 +49,12 @@ class GithubOAuthClient(IGithubOAuthClient):
                 f"GitHub OAuth token exchange failed: {token_response.status_code}"
             )
 
-        access_token = token_response.json().get("access_token")
+        token_data = token_response.json()
+        if token_data.get("error"):
+            description = token_data.get("error_description") or token_data["error"]
+            raise ExternalServiceError(f"GitHub OAuth token exchange failed: {description}")
+
+        access_token = token_data.get("access_token")
         if not access_token:
             raise ExternalServiceError("GitHub OAuth token exchange returned no access_token")
 

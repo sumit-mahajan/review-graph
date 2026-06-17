@@ -1,6 +1,7 @@
 from uuid import UUID
 
 from sqlalchemy import select
+from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from domain.entities.agent_config import AgentConfig
@@ -28,10 +29,24 @@ class PostgresAgentConfigRepository(IAgentConfigRepository):
         if existing is not None:
             return existing
 
-        orm = AgentConfigORM(repository_id=repository_id)
-        self._session.add(orm)
+        # INSERT … ON CONFLICT avoids UniqueViolation when concurrent requests
+        # both pass the SELECT above (e.g. parallel GET /repos on dashboard load).
+        stmt = (
+            insert(AgentConfigORM)
+            .values(repository_id=repository_id)
+            .on_conflict_do_nothing(constraint="agent_configs_repository_id_key")
+        )
+        await self._session.execute(stmt)
         await self._session.commit()
-        await self._session.refresh(orm)
+
+        result = await self._session.execute(
+            select(AgentConfigORM).where(AgentConfigORM.repository_id == repository_id)
+        )
+        orm = result.scalar_one_or_none()
+        if orm is None:
+            raise EntityNotFoundError(
+                f"Agent config for repository {repository_id} not found after upsert"
+            )
         return _to_entity(orm)
 
     async def update(

@@ -17,7 +17,7 @@ dev-api:
 	cd backend && uv run uvicorn src.api.main:app --reload --port 8000
 
 dev-worker:
-	cd backend && uv run python -m worker.main
+	cd backend && uv run uvicorn worker.http:app --reload --host 0.0.0.0 --port 8001
 
 dev-frontend:
 	cd frontend && npm run dev

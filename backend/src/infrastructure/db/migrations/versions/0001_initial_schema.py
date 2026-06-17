@@ -97,7 +97,7 @@ def upgrade() -> None:
         sa.Column("medium_count", sa.Integer(), nullable=False, server_default="0"),
         sa.Column("low_count", sa.Integer(), nullable=False, server_default="0"),
         sa.Column("info_count", sa.Integer(), nullable=False, server_default="0"),
-        sa.Column("agents_run", postgresql.JSONB(), nullable=False, server_default="'[]'"),
+        sa.Column("agents_run", postgresql.JSONB(), nullable=False, server_default=sa.text("'[]'::jsonb")),
         sa.Column("langfuse_trace_id", sa.String(255), nullable=True),
         sa.Column("posted_to_github", sa.Boolean(), nullable=False, server_default="false"),
         sa.Column("created_at", sa.DateTime(timezone=True), server_default=sa.text("now()"), nullable=False),

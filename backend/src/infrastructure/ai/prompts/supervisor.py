@@ -11,7 +11,8 @@ Available agents:
 
 Guidelines:
 - ALWAYS include at least one agent.
-- Skip agents that are clearly irrelevant (e.g. skip "test" for docs-only changes).
+- When code files are changed (non-docs), prefer running ALL four agents unless clearly irrelevant.
+- Skip agents only when clearly irrelevant (e.g. skip "test" for docs-only or README-only changes).
 - Include "security" for any file touching auth, crypto, HTTP handling, or DB queries.
 - Include "perf" for any file touching DB access, loops over collections, or async code.
 - Include "arch" for structural changes (new classes, moved modules, changed imports).

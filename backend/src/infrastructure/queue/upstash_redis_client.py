@@ -38,7 +38,9 @@ class UpstashRedisClient(IQueueClient):
             return await self._fallback.enqueue(message)
 
         try:
-            message_id: str = self._redis.xadd(self._stream_name, {"payload": payload})
+            message_id: str = self._redis.xadd(
+                self._stream_name, "*", {"payload": payload}
+            )
             return message_id
         except Exception as exc:  # noqa: BLE001
             raise ExternalServiceError("Failed to enqueue job to Redis") from exc

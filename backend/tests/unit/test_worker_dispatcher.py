@@ -113,6 +113,20 @@ async def test_dispatcher_acks_unknown_job_type() -> None:
 
 
 @pytest.mark.asyncio
+async def test_dispatcher_acks_invalid_job_id_uuid() -> None:
+    dispatcher, _, _ = _make_dispatcher()
+    payload = json.dumps({
+        "job_type": "review",
+        "job_id": "test",
+        "repository_id": str(uuid4()),
+        "head_sha": "b" * 40,
+        "pr_number": 1,
+    })
+    result = await dispatcher.dispatch(payload)
+    assert result is True
+
+
+@pytest.mark.asyncio
 async def test_dispatcher_backoff_skipped_on_first_attempt() -> None:
     dispatcher, job_repo, _ = _make_dispatcher()
     job = _make_job(job_repo)

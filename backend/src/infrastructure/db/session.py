@@ -3,10 +3,17 @@ from collections.abc import AsyncGenerator
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 
 from infrastructure.config.settings import Settings
+from infrastructure.db.database_url import normalize_async_database_url
 
 
 def create_engine(database_url: str):
-    return create_async_engine(database_url, echo=False, pool_pre_ping=True)
+    url, connect_args = normalize_async_database_url(database_url)
+    return create_async_engine(
+        url,
+        echo=False,
+        pool_pre_ping=True,
+        connect_args=connect_args,
+    )
 
 
 def create_session_factory(settings: Settings) -> async_sessionmaker[AsyncSession]:
