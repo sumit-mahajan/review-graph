@@ -1,4 +1,5 @@
 """Shared utilities for building agent prompts."""
+
 from infrastructure.ai.graph.state import ContextUnit, PRMetadata, RawDiffChunk
 
 
@@ -7,8 +8,9 @@ def format_pr_header(meta: PRMetadata) -> str:
     if len(meta.changed_files) > 10:
         files += f" (+{len(meta.changed_files) - 10} more)"
     return (
-        f"PR #{meta.pr_number}: \"{meta.title}\" by {meta.author}\n"
-        f"Base: {meta.base_branch} ({meta.base_sha[:8]}) → Head: {meta.head_branch} ({meta.head_sha[:8]})\n"
+        f'PR #{meta.pr_number}: "{meta.title}" by {meta.author}\n'
+        f"Base: {meta.base_branch} ({meta.base_sha[:8]}) → "
+        f"Head: {meta.head_branch} ({meta.head_sha[:8]})\n"
         f"Changed files: {files}\n"
     )
 

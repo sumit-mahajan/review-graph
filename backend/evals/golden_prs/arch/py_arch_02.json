@@ -1,0 +1,51 @@
+{
+  "id": "py_arch_02",
+  "category": "arch",
+  "title": "Add Review domain entity",
+  "author": "eval-bot",
+  "base_sha": "0000000000000000000000000000000000000000",
+  "head_sha": "1111111111111111111111111111111111111111",
+  "base_branch": "main",
+  "head_branch": "feature/review-entity",
+  "changed_files": [
+    { "path": "domain/entities/review.py", "status": "added", "additions": 15, "deletions": 0 }
+  ],
+  "context_units": [
+    {
+      "file_path": "domain/entities/review.py",
+      "node_type": "module",
+      "node_name": "review",
+      "start_line": 1,
+      "end_line": 15,
+      "body_old": "",
+      "body_new": "from dataclasses import dataclass\n\nfrom sqlalchemy.orm import Mapped\n\nfrom infrastructure.db.session import create_engine\n\n\n@dataclass\nclass Review:\n    id: str\n    summary: str\n\n    def save(self):\n        engine = create_engine(\"postgresql+asyncpg://localhost/app\")\n        engine.execute(\"INSERT INTO reviews VALUES (...)\")\n",
+      "diff_patch": "@@ -0,0 +1,15 @@\n+from dataclasses import dataclass\n+\n+from sqlalchemy.orm import Mapped\n+\n+from infrastructure.db.session import create_engine\n+\n+\n+@dataclass\n+class Review:\n+    id: str\n+    summary: str\n+\n+    def save(self):\n+        engine = create_engine(\"postgresql+asyncpg://localhost/app\")\n+        engine.execute(\"INSERT INTO reviews VALUES (...)\")",
+      "language": "python"
+    }
+  ],
+  "raw_diff_chunks": [
+    {
+      "file_path": "domain/entities/review.py",
+      "patch": "@@ -0,0 +1,15 @@\n+from dataclasses import dataclass\n+\n+from sqlalchemy.orm import Mapped\n+\n+from infrastructure.db.session import create_engine\n+\n+\n+@dataclass\n+class Review:\n+    id: str\n+    summary: str\n+\n+    def save(self):\n+        engine = create_engine(\"postgresql+asyncpg://localhost/app\")\n+        engine.execute(\"INSERT INTO reviews VALUES (...)\")",
+      "language": "python"
+    }
+  ],
+  "expected_findings": [
+    {
+      "category": "arch",
+      "file_path": "domain/entities/review.py",
+      "line_start": 3,
+      "line_end": 5,
+      "title": "Domain entity imports framework and infrastructure",
+      "rationale": "A domain entity imports SQLAlchemy and the infrastructure DB session, violating the dependency rule that domain has zero framework/infrastructure imports."
+    },
+    {
+      "category": "arch",
+      "file_path": "domain/entities/review.py",
+      "line_start": 13,
+      "line_end": 15,
+      "title": "Entity performs its own persistence (active record)",
+      "rationale": "The entity opens a DB engine and executes SQL inside save(); persistence is an infrastructure concern that belongs in a repository, not on the domain entity."
+    }
+  ]
+}

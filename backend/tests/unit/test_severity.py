@@ -1,4 +1,5 @@
 """Tests for severity helpers."""
+
 from domain.value_objects.severity import Severity, parse_severity, severity_meets_minimum
 
 

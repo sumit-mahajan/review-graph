@@ -1,5 +1,5 @@
-from datetime import UTC, datetime
-from uuid import UUID, uuid4
+from datetime import UTC
+from uuid import UUID
 
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -79,9 +79,7 @@ class PostgresReviewRepository(IReviewRepository):
         return _to_review_entity(orm, findings)
 
     async def get_by_job_id(self, job_id: UUID) -> Review | None:
-        result = await self._session.execute(
-            select(ReviewORM).where(ReviewORM.job_id == job_id)
-        )
+        result = await self._session.execute(select(ReviewORM).where(ReviewORM.job_id == job_id))
         orm = result.scalar_one_or_none()
         if orm is None:
             return None
@@ -119,9 +117,7 @@ class PostgresReviewRepository(IReviewRepository):
         findings = await self._load_findings(review_id)
         return _to_review_entity(orm, findings)
 
-    async def update_finding_comment_ids(
-        self, updates: list[tuple[UUID, int]]
-    ) -> None:
+    async def update_finding_comment_ids(self, updates: list[tuple[UUID, int]]) -> None:
         for finding_id, comment_id in updates:
             orm = await self._session.get(FindingORM, finding_id)
             if orm is None:

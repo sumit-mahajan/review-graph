@@ -67,4 +67,4 @@ async def release_stale_running_jobs(
         .values(status=JobStatus.PENDING.value, started_at=None)
     )
     await session.commit()
-    return int(result.rowcount or 0)
+    return int(getattr(result, "rowcount", 0) or 0)

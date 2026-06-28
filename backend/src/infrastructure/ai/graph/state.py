@@ -5,13 +5,14 @@ All agent nodes receive this state and return an updated copy.
 No agent node may perform DB writes, HTTP calls, or Redis pushes —
 those belong in the use case layer that wraps the graph.
 """
+
 from __future__ import annotations
 
 from dataclasses import dataclass, field
 from typing import TypedDict
-from uuid import UUID
+from uuid import UUID  # noqa: TC003 — TypedDict fields are evaluated at runtime on Py 3.14+
 
-from domain.value_objects.agent_type import AgentType
+from domain.value_objects.agent_type import AgentType  # noqa: TC001
 
 
 @dataclass(frozen=True)
@@ -40,13 +41,13 @@ class ContextUnit:
     """One tree-sitter parsed function/class that contains ≥1 changed line."""
 
     file_path: str
-    node_type: str        # function | class | module
+    node_type: str  # function | class | module
     node_name: str
     start_line: int
     end_line: int
-    body_old: str         # full old version (empty for added files)
-    body_new: str         # full new version
-    diff_patch: str       # unified diff for this unit only
+    body_old: str  # full old version (empty for added files)
+    body_new: str  # full new version
+    diff_patch: str  # unified diff for this unit only
     language: str
 
 
@@ -61,8 +62,8 @@ class RawDiffChunk:
 
 @dataclass
 class AgentFinding:
-    severity: str          # critical|high|medium|low|info
-    category: str          # security|perf|arch|test
+    severity: str  # critical|high|medium|low|info
+    category: str  # security|perf|arch|test
     agent_source: str
     file_path: str
     line_start: int | None
@@ -80,13 +81,13 @@ class ReviewState(TypedDict):
 
     # Input — populated before any agent runs
     pr_metadata: PRMetadata
-    context_units: list[ContextUnit]         # from tree-sitter (F-03); may be empty
-    raw_diff_chunks: list[RawDiffChunk]      # fallback raw diff per file
-    rag_chunks: dict[str, list[str]]         # agent_type -> list[chunk_text] (F-03)
+    context_units: list[ContextUnit]  # from tree-sitter (F-03); may be empty
+    raw_diff_chunks: list[RawDiffChunk]  # fallback raw diff per file
+    rag_chunks: dict[str, list[str]]  # agent_type -> list[chunk_text] (F-03)
 
     # Pipeline state — mutated by agents
-    active_agents: list[AgentType]           # set by SupervisorAgent
-    findings: list[AgentFinding]             # accumulated across all agents
+    active_agents: list[AgentType]  # set by SupervisorAgent
+    findings: list[AgentFinding]  # accumulated across all agents
 
     # Output — set by SynthesisAgent
     summary: str | None

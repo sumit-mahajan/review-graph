@@ -3,17 +3,15 @@ LanggraphOrchestrator — implements IAgentOrchestrator using the LangGraph pipe
 
 Replaces StubAgentOrchestrator when Gemini API key is configured.
 """
+
 from __future__ import annotations
 
-from uuid import UUID
+from typing import TYPE_CHECKING
+from uuid import UUID  # noqa: TC003 — required at runtime for annotation evaluation (Py 3.14+)
 
 import structlog
-from sqlalchemy.ext.asyncio import AsyncSession
 
-from application.use_cases.assemble_review_package import AssembleReviewPackageUseCase
-from domain.repositories.i_job_repository import IJobRepository
 from domain.services.i_agent_orchestrator import IAgentOrchestrator, OrchestratorResult
-from domain.services.i_code_embedding_store import ICodeEmbeddingStore
 from domain.value_objects.agent_type import AgentType
 from domain.value_objects.review_finding import ReviewFinding
 from infrastructure.ai.agents.arch_agent import ArchAgent
@@ -22,10 +20,18 @@ from infrastructure.ai.agents.security_agent import SecurityAgent
 from infrastructure.ai.agents.supervisor_agent import SupervisorAgent
 from infrastructure.ai.agents.synthesis_agent import SynthesisAgent
 from infrastructure.ai.agents.test_agent import TestAgent
-from infrastructure.ai.gemini_client import GeminiClient
 from infrastructure.ai.graph.review_graph import RagRetriever, build_review_graph
-from infrastructure.ai.graph.state import ReviewState
+from infrastructure.ai.graph.state import AgentFinding, ContextUnit, PRMetadata, RawDiffChunk
 from infrastructure.observability.langfuse_client import ILangfuseClient, NoOpLangfuseClient
+
+if TYPE_CHECKING:
+    from sqlalchemy.ext.asyncio import AsyncSession
+
+    from application.use_cases.assemble_review_package import AssembleReviewPackageUseCase
+    from domain.repositories.i_job_repository import IJobRepository
+    from domain.services.i_code_embedding_store import ICodeEmbeddingStore
+    from infrastructure.ai.gemini_client import GeminiClient
+    from infrastructure.ai.graph.state import ReviewState
 
 logger = structlog.get_logger()
 
@@ -94,22 +100,24 @@ class LanggraphOrchestrator(IAgentOrchestrator):
         await log.ainfo("pipeline_started", trace_id=trace_id)
 
         # F-03: Assemble Review Package (diff fetch + tree-sitter parse)
-        context_units = []
-        raw_diff_chunks = []
+        context_units: list[ContextUnit] = []
+        raw_diff_chunks: list[RawDiffChunk] = []
         pr_metadata_override = None
 
         if self._assembler is not None:
             try:
-                pr_metadata_override, context_units, raw_diff_chunks = (
-                    await self._assembler.execute(
-                        repository_id=job.repository_id,
-                        pr_number=job.pr_number,
-                        pr_title=job.pr_title,
-                        pr_author=job.pr_author,
-                        pr_url=job.pr_url,
-                        base_sha=job.base_sha,
-                        head_sha=job.head_sha,
-                    )
+                (
+                    pr_metadata_override,
+                    context_units,
+                    raw_diff_chunks,
+                ) = await self._assembler.execute(
+                    repository_id=job.repository_id,
+                    pr_number=job.pr_number,
+                    pr_title=job.pr_title,
+                    pr_author=job.pr_author,
+                    pr_url=job.pr_url,
+                    base_sha=job.base_sha,
+                    head_sha=job.head_sha,
                 )
             except Exception as exc:  # noqa: BLE001
                 await log.awarning("review_package_assembly_failed", error=str(exc))
@@ -117,7 +125,6 @@ class LanggraphOrchestrator(IAgentOrchestrator):
                     await self._db.rollback()
                 # Degrade gracefully — proceed with empty context units
 
-        from infrastructure.ai.graph.state import PRMetadata  # noqa: PLC0415
         pr_metadata = pr_metadata_override or PRMetadata(
             pr_number=job.pr_number,
             title=job.pr_title,
@@ -147,9 +154,7 @@ class LanggraphOrchestrator(IAgentOrchestrator):
         final_state: ReviewState = await self._graph.ainvoke(initial_state)  # type: ignore[assignment]
 
         findings = final_state.get("findings", [])
-        agents_run = [
-            AgentType(a.value) for a in final_state.get("active_agents", [])
-        ]
+        agents_run = [AgentType(a.value) for a in final_state.get("active_agents", [])]
 
         self._langfuse.end_trace(trace_id, output={"total_findings": len(findings)})
         await log.ainfo(
@@ -168,7 +173,7 @@ class LanggraphOrchestrator(IAgentOrchestrator):
         )
 
 
-def _to_review_findings(findings: list) -> list[ReviewFinding]:
+def _to_review_findings(findings: list[AgentFinding]) -> list[ReviewFinding]:
     return [
         ReviewFinding(
             severity=f.severity,

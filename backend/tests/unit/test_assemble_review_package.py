@@ -1,4 +1,5 @@
 """Tests for AssembleReviewPackageUseCase with mocked fetcher."""
+
 from datetime import UTC, datetime
 from unittest.mock import AsyncMock
 from uuid import uuid4

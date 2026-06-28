@@ -1,0 +1,78 @@
+{
+  "id": "test_02",
+  "category": "test",
+  "title": "Extend discount calculator with a per-transaction cap option",
+  "author": "eval-bot",
+  "base_sha": "0000000000000000000000000000000000000000",
+  "head_sha": "1111111111111111111111111111111111111111",
+  "base_branch": "main",
+  "head_branch": "feature",
+  "changed_files": [
+    {
+      "path": "app/billing/calculator.py",
+      "status": "modified",
+      "additions": 6,
+      "deletions": 3
+    },
+    {
+      "path": "tests/test_calculator.py",
+      "status": "modified",
+      "additions": 3,
+      "deletions": 3
+    }
+  ],
+  "context_units": [
+    {
+      "file_path": "app/billing/calculator.py",
+      "node_type": "module",
+      "node_name": "calculator",
+      "start_line": 1,
+      "end_line": 8,
+      "body_old": "def calculate_discount(price: float, pct: float) -> float:\n    \"\"\"Return discounted price.  pct is in the range 0-100.\"\"\"\n    if pct < 0 or pct > 100:\n        raise ValueError(\"pct must be between 0 and 100\")\n    return round(price * (1 - pct / 100), 2)\n",
+      "body_new": "def calculate_discount(price: float, pct: float, cap: float | None = None) -> float:\n    \"\"\"Return discounted price; pct is 0-100. cap limits the absolute discount amount.\"\"\"\n    if pct < 0 or pct > 100:\n        raise ValueError(\"pct must be between 0 and 100\")\n    discount = price * pct / 100\n    if cap is not None:\n        discount = min(discount, cap)\n    return round(price - discount, 2)\n",
+      "diff_patch": "--- a/app/billing/calculator.py\n+++ b/app/billing/calculator.py\n@@ -1,5 +1,8 @@\n-def calculate_discount(price: float, pct: float) -> float:\n-    \"\"\"Return discounted price.  pct is in the range 0-100.\"\"\"\n+def calculate_discount(price: float, pct: float, cap: float | None = None) -> float:\n+    \"\"\"Return discounted price; pct is 0-100. cap limits the absolute discount amount.\"\"\"\n     if pct < 0 or pct > 100:\n         raise ValueError(\"pct must be between 0 and 100\")\n-    return round(price * (1 - pct / 100), 2)\n+    discount = price * pct / 100\n+    if cap is not None:\n+        discount = min(discount, cap)\n+    return round(price - discount, 2)\n",
+      "language": "python"
+    },
+    {
+      "file_path": "tests/test_calculator.py",
+      "node_type": "module",
+      "node_name": "test_calculator",
+      "start_line": 1,
+      "end_line": 20,
+      "body_old": "import pytest\nfrom app.billing.calculator import calculate_discount\n\n\ndef test_discount_ten_percent():\n    assert calculate_discount(100.0, 10) == 90.0\n\n\ndef test_discount_full():\n    assert calculate_discount(50.0, 100) == 0.0\n\n\ndef test_discount_invalid_pct():\n    with pytest.raises(ValueError):\n        calculate_discount(100.0, 110)\n\n\ndef test_discount_negative_pct():\n    with pytest.raises(ValueError):\n        calculate_discount(100.0, -5)\n",
+      "body_new": "import pytest\nfrom app.billing.calculator import calculate_discount\n\n\ndef test_discount_ten_percent():\n    assert calculate_discount(100.0, 10) == 90.0\n\n\ndef test_discount_full():\n    assert calculate_discount(50.0, 100) == 0.0\n\n\ndef test_discount_invalid_pct():\n    with pytest.raises(ValueError):\n        calculate_discount(100.0, 110)\n\n\ndef test_discount_with_cap():\n    result = calculate_discount(200.0, 50, cap=50.0)\n    assert result is not None\n",
+      "diff_patch": "--- a/tests/test_calculator.py\n+++ b/tests/test_calculator.py\n@@ -15,6 +15,6 @@\n         calculate_discount(100.0, 110)\n \n \n-def test_discount_negative_pct():\n-    with pytest.raises(ValueError):\n-        calculate_discount(100.0, -5)\n+def test_discount_with_cap():\n+    result = calculate_discount(200.0, 50, cap=50.0)\n+    assert result is not None\n",
+      "language": "python"
+    }
+  ],
+  "raw_diff_chunks": [
+    {
+      "file_path": "app/billing/calculator.py",
+      "patch": "--- a/app/billing/calculator.py\n+++ b/app/billing/calculator.py\n@@ -1,5 +1,8 @@\n-def calculate_discount(price: float, pct: float) -> float:\n-    \"\"\"Return discounted price.  pct is in the range 0-100.\"\"\"\n+def calculate_discount(price: float, pct: float, cap: float | None = None) -> float:\n+    \"\"\"Return discounted price; pct is 0-100. cap limits the absolute discount amount.\"\"\"\n     if pct < 0 or pct > 100:\n         raise ValueError(\"pct must be between 0 and 100\")\n-    return round(price * (1 - pct / 100), 2)\n+    discount = price * pct / 100\n+    if cap is not None:\n+        discount = min(discount, cap)\n+    return round(price - discount, 2)\n",
+      "language": "python"
+    },
+    {
+      "file_path": "tests/test_calculator.py",
+      "patch": "--- a/tests/test_calculator.py\n+++ b/tests/test_calculator.py\n@@ -15,6 +15,6 @@\n         calculate_discount(100.0, 110)\n \n \n-def test_discount_negative_pct():\n-    with pytest.raises(ValueError):\n-        calculate_discount(100.0, -5)\n+def test_discount_with_cap():\n+    result = calculate_discount(200.0, 50, cap=50.0)\n+    assert result is not None\n",
+      "language": "python"
+    }
+  ],
+  "expected_findings": [
+    {
+      "category": "test",
+      "file_path": "app/billing/calculator.py",
+      "line_start": 1,
+      "line_end": 1,
+      "title": "New cap parameter adds an untested code path to a public function",
+      "rationale": "The cap parameter introduces a min() branch that is never exercised by any test. Behaviour at cap=0, cap equal to the computed discount, and cap greater than the full price are all untested, risking silent regressions."
+    },
+    {
+      "category": "test",
+      "file_path": "tests/test_calculator.py",
+      "line_start": 20,
+      "line_end": 20,
+      "title": "Weakened assertion does not verify the capped discount value",
+      "rationale": "assert result is not None passes for any non-None return, including wrong answers. The correct assertion is 'assert result == 150.0', which would catch a regression in the cap-limiting logic."
+    }
+  ]
+}

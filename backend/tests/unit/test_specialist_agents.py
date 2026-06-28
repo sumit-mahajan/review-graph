@@ -1,4 +1,5 @@
 """Tests for SecurityAgent, PerfAgent, ArchAgent, TestAgent — findings accumulation."""
+
 from unittest.mock import AsyncMock, MagicMock
 
 import pytest
@@ -97,12 +98,20 @@ async def test_test_agent_appends_findings() -> None:
 async def test_findings_accumulate_across_agents() -> None:
     """Simulate sequential agent calls accumulating findings."""
     finding_security = FindingSchema(
-        severity="high", category="security", file_path="a.py",
-        title="SQL injection", description="...", fix_suggestion=None,
+        severity="high",
+        category="security",
+        file_path="a.py",
+        title="SQL injection",
+        description="...",
+        fix_suggestion=None,
     )
     finding_perf = FindingSchema(
-        severity="medium", category="perf", file_path="b.py",
-        title="N+1 query", description="...", fix_suggestion=None,
+        severity="medium",
+        category="perf",
+        file_path="b.py",
+        title="N+1 query",
+        description="...",
+        fix_suggestion=None,
     )
 
     state = make_state()

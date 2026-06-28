@@ -5,11 +5,13 @@ Unit tests:        tests/unit/      — mock all infrastructure interfaces
 Integration tests: tests/integration/ — real DB (test schema), mocked external APIs
 E2E tests:         tests/e2e/        — full stack, real DB + Redis
 """
-import pytest
-from unittest.mock import AsyncMock, MagicMock
 
+from unittest.mock import AsyncMock
+
+import pytest
 
 # ── Domain / Application mocks ────────────────────────────────────────────────
+
 
 @pytest.fixture
 def mock_review_repo() -> AsyncMock:

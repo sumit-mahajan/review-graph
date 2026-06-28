@@ -1,0 +1,51 @@
+{
+  "id": "py_test_01",
+  "category": "test",
+  "title": "Add funds transfer and refund",
+  "author": "eval-bot",
+  "base_sha": "0000000000000000000000000000000000000000",
+  "head_sha": "1111111111111111111111111111111111111111",
+  "base_branch": "main",
+  "head_branch": "feature/payments",
+  "changed_files": [
+    { "path": "app/payment.py", "status": "added", "additions": 13, "deletions": 0 }
+  ],
+  "context_units": [
+    {
+      "file_path": "app/payment.py",
+      "node_type": "module",
+      "node_name": "payment",
+      "start_line": 1,
+      "end_line": 13,
+      "body_old": "",
+      "body_new": "def transfer_funds(account_from, account_to, amount):\n    if amount <= 0:\n        raise ValueError(\"amount must be positive\")\n    if account_from.balance < amount:\n        raise InsufficientFunds()\n    account_from.balance -= amount\n    account_to.balance += amount\n    return account_from.balance\n\n\ndef refund(account, amount):\n    account.balance += amount\n    return account.balance\n",
+      "diff_patch": "@@ -0,0 +1,13 @@\n+def transfer_funds(account_from, account_to, amount):\n+    if amount <= 0:\n+        raise ValueError(\"amount must be positive\")\n+    if account_from.balance < amount:\n+        raise InsufficientFunds()\n+    account_from.balance -= amount\n+    account_to.balance += amount\n+    return account_from.balance\n+\n+\n+def refund(account, amount):\n+    account.balance += amount\n+    return account.balance",
+      "language": "python"
+    }
+  ],
+  "raw_diff_chunks": [
+    {
+      "file_path": "app/payment.py",
+      "patch": "@@ -0,0 +1,13 @@\n+def transfer_funds(account_from, account_to, amount):\n+    if amount <= 0:\n+        raise ValueError(\"amount must be positive\")\n+    if account_from.balance < amount:\n+        raise InsufficientFunds()\n+    account_from.balance -= amount\n+    account_to.balance += amount\n+    return account_from.balance\n+\n+\n+def refund(account, amount):\n+    account.balance += amount\n+    return account.balance",
+      "language": "python"
+    }
+  ],
+  "expected_findings": [
+    {
+      "category": "test",
+      "file_path": "app/payment.py",
+      "line_start": 1,
+      "line_end": 8,
+      "title": "New public function transfer_funds has no tests",
+      "rationale": "transfer_funds adds branching logic (non-positive amount, insufficient funds, balance mutation) but no unit test covers these paths."
+    },
+    {
+      "category": "test",
+      "file_path": "app/payment.py",
+      "line_start": 11,
+      "line_end": 13,
+      "title": "New public function refund is untested",
+      "rationale": "refund is a new public function with no accompanying test for its balance update behavior."
+    }
+  ]
+}

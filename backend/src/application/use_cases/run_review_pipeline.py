@@ -10,6 +10,7 @@ Execution order:
   6. Mark job COMPLETED
   On failure: schedule retry with retry_after, or mark FAILED after max attempts.
 """
+
 from datetime import UTC, datetime, timedelta
 from uuid import UUID
 
@@ -74,10 +75,7 @@ class RunReviewPipelineUseCase:
             if self._persist_review is not None:
                 existing_review = await self._persist_review.get_existing(job_id)
 
-            if (
-                existing_review is not None
-                and existing_review.posted_to_github
-            ):
+            if existing_review is not None and existing_review.posted_to_github:
                 await self._job_repo.update_status(job_id, JobStatus.COMPLETED)
                 await log.ainfo("worker_job_idempotent_complete")
                 return True

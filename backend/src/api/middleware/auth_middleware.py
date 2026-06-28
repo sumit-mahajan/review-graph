@@ -1,6 +1,5 @@
 from collections.abc import AsyncGenerator
-from typing import Annotated
-from uuid import UUID
+from typing import TYPE_CHECKING, Annotated
 
 from fastapi import Depends, HTTPException
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
@@ -8,9 +7,11 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from domain.entities.user import User
 from domain.errors import DomainError
-from domain.repositories.i_user_repository import IUserRepository
 from domain.services.i_jwt_service import IJwtService
 from infrastructure.db.repositories.user_repository import PostgresUserRepository
+
+if TYPE_CHECKING:
+    from domain.repositories.i_user_repository import IUserRepository
 
 _bearer = HTTPBearer(auto_error=False)
 

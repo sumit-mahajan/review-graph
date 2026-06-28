@@ -49,9 +49,7 @@ class PostgresAgentConfigRepository(IAgentConfigRepository):
             )
         return _to_entity(orm)
 
-    async def update(
-        self, repository_id: UUID, params: UpdateAgentConfigParams
-    ) -> AgentConfig:
+    async def update(self, repository_id: UUID, params: UpdateAgentConfigParams) -> AgentConfig:
         result = await self._session.execute(
             select(AgentConfigORM).where(AgentConfigORM.repository_id == repository_id)
         )

@@ -1,7 +1,7 @@
 from uuid import UUID
 
-from application.dtos.dashboard_mappers import to_job_status_dto
 from api.schemas.dashboard import JobStatusDTO
+from application.dtos.dashboard_mappers import to_job_status_dto
 from domain.entities.user import User
 from domain.errors import EntityNotFoundError, ForbiddenError
 from domain.repositories.i_job_repository import IJobRepository

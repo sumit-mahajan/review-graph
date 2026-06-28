@@ -25,9 +25,7 @@ def register_exception_handlers(app: FastAPI) -> None:
         return _error_response(502, "UPSTREAM_ERROR", str(exc))
 
     @app.exception_handler(RequestValidationError)
-    async def validation_error_handler(
-        _: Request, exc: RequestValidationError
-    ) -> JSONResponse:
+    async def validation_error_handler(_: Request, exc: RequestValidationError) -> JSONResponse:
         fields = [
             {"field": ".".join(str(part) for part in err["loc"][1:]), "message": err["msg"]}
             for err in exc.errors()
@@ -69,7 +67,5 @@ def _error_response(
     message: str,
     details: dict[str, object] | None = None,
 ) -> JSONResponse:
-    body = ErrorResponse(
-        error=ErrorBody(code=code, message=message, details=details or {})
-    )
+    body = ErrorResponse(error=ErrorBody(code=code, message=message, details=details or {}))
     return JSONResponse(status_code=status_code, content=body.model_dump())

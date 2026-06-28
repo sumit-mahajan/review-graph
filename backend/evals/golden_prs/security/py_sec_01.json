@@ -1,0 +1,51 @@
+{
+  "id": "py_sec_01",
+  "category": "security",
+  "title": "Add user lookup and rule evaluation helpers",
+  "author": "eval-bot",
+  "base_sha": "0000000000000000000000000000000000000000",
+  "head_sha": "1111111111111111111111111111111111111111",
+  "base_branch": "main",
+  "head_branch": "feature/user-lookup",
+  "changed_files": [
+    { "path": "app/users.py", "status": "added", "additions": 12, "deletions": 0 }
+  ],
+  "context_units": [
+    {
+      "file_path": "app/users.py",
+      "node_type": "module",
+      "node_name": "users",
+      "start_line": 1,
+      "end_line": 12,
+      "body_old": "",
+      "body_new": "import sqlite3\n\n\ndef get_user(conn, user_id):\n    cursor = conn.cursor()\n    query = \"SELECT * FROM users WHERE id = '\" + user_id + \"'\"\n    cursor.execute(query)\n    return cursor.fetchone()\n\n\ndef run_rule(expr, context):\n    return eval(expr, {}, context)\n",
+      "diff_patch": "@@ -0,0 +1,12 @@\n+import sqlite3\n+\n+\n+def get_user(conn, user_id):\n+    cursor = conn.cursor()\n+    query = \"SELECT * FROM users WHERE id = '\" + user_id + \"'\"\n+    cursor.execute(query)\n+    return cursor.fetchone()\n+\n+\n+def run_rule(expr, context):\n+    return eval(expr, {}, context)",
+      "language": "python"
+    }
+  ],
+  "raw_diff_chunks": [
+    {
+      "file_path": "app/users.py",
+      "patch": "@@ -0,0 +1,12 @@\n+import sqlite3\n+\n+\n+def get_user(conn, user_id):\n+    cursor = conn.cursor()\n+    query = \"SELECT * FROM users WHERE id = '\" + user_id + \"'\"\n+    cursor.execute(query)\n+    return cursor.fetchone()\n+\n+\n+def run_rule(expr, context):\n+    return eval(expr, {}, context)",
+      "language": "python"
+    }
+  ],
+  "expected_findings": [
+    {
+      "category": "security",
+      "file_path": "app/users.py",
+      "line_start": 6,
+      "line_end": 7,
+      "title": "SQL injection via string-concatenated query",
+      "rationale": "user_id is concatenated directly into the SQL string and executed, allowing SQL injection. A parameterized query must be used instead."
+    },
+    {
+      "category": "security",
+      "file_path": "app/users.py",
+      "line_start": 12,
+      "line_end": 12,
+      "title": "Arbitrary code execution via eval()",
+      "rationale": "eval() executes attacker-controllable expression text, enabling remote code execution. eval must be avoided for untrusted input."
+    }
+  ]
+}

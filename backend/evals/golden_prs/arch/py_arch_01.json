@@ -1,0 +1,51 @@
+{
+  "id": "py_arch_01",
+  "category": "arch",
+  "title": "Add review fetch endpoint",
+  "author": "eval-bot",
+  "base_sha": "0000000000000000000000000000000000000000",
+  "head_sha": "1111111111111111111111111111111111111111",
+  "base_branch": "main",
+  "head_branch": "feature/review-endpoint",
+  "changed_files": [
+    { "path": "api/routes/reviews.py", "status": "added", "additions": 19, "deletions": 0 }
+  ],
+  "context_units": [
+    {
+      "file_path": "api/routes/reviews.py",
+      "node_type": "module",
+      "node_name": "reviews",
+      "start_line": 1,
+      "end_line": 19,
+      "body_old": "",
+      "body_new": "from fastapi import APIRouter\nfrom sqlalchemy import select\n\nfrom infrastructure.db.session import get_session\nfrom infrastructure.db.models.review import ReviewORM\n\nrouter = APIRouter()\n\n\n@router.get(\"/reviews/{review_id}\")\nasync def get_review(review_id):\n    session = get_session()\n    result = await session.execute(\n        select(ReviewORM).where(ReviewORM.id == review_id)\n    )\n    review = result.scalar_one_or_none()\n    if review is None:\n        return {\"error\": \"not found\"}\n    return {\"id\": str(review.id), \"summary\": review.summary}\n",
+      "diff_patch": "@@ -0,0 +1,19 @@\n+from fastapi import APIRouter\n+from sqlalchemy import select\n+\n+from infrastructure.db.session import get_session\n+from infrastructure.db.models.review import ReviewORM\n+\n+router = APIRouter()\n+\n+\n+@router.get(\"/reviews/{review_id}\")\n+async def get_review(review_id):\n+    session = get_session()\n+    result = await session.execute(\n+        select(ReviewORM).where(ReviewORM.id == review_id)\n+    )\n+    review = result.scalar_one_or_none()\n+    if review is None:\n+        return {\"error\": \"not found\"}\n+    return {\"id\": str(review.id), \"summary\": review.summary}",
+      "language": "python"
+    }
+  ],
+  "raw_diff_chunks": [
+    {
+      "file_path": "api/routes/reviews.py",
+      "patch": "@@ -0,0 +1,19 @@\n+from fastapi import APIRouter\n+from sqlalchemy import select\n+\n+from infrastructure.db.session import get_session\n+from infrastructure.db.models.review import ReviewORM\n+\n+router = APIRouter()\n+\n+\n+@router.get(\"/reviews/{review_id}\")\n+async def get_review(review_id):\n+    session = get_session()\n+    result = await session.execute(\n+        select(ReviewORM).where(ReviewORM.id == review_id)\n+    )\n+    review = result.scalar_one_or_none()\n+    if review is None:\n+        return {\"error\": \"not found\"}\n+    return {\"id\": str(review.id), \"summary\": review.summary}",
+      "language": "python"
+    }
+  ],
+  "expected_findings": [
+    {
+      "category": "arch",
+      "file_path": "api/routes/reviews.py",
+      "line_start": 4,
+      "line_end": 5,
+      "title": "API layer imports infrastructure directly",
+      "rationale": "The route imports infrastructure DB session and ORM models, violating the dependency rule; the API layer must depend on application use cases, not infrastructure."
+    },
+    {
+      "category": "arch",
+      "file_path": "api/routes/reviews.py",
+      "line_start": 12,
+      "line_end": 16,
+      "title": "Database query inside route handler",
+      "rationale": "The handler builds and executes a DB query directly; data access belongs in a repository called via a use case, keeping routes thin."
+    }
+  ]
+}

@@ -1,4 +1,5 @@
 """Tests for @trace_agent decorator and LangfuseClient."""
+
 from unittest.mock import MagicMock
 from uuid import uuid4
 
@@ -11,9 +12,7 @@ from infrastructure.observability.tracing import configure_tracing, trace_agent
 @pytest.mark.asyncio
 async def test_trace_agent_calls_start_and_end_span() -> None:
     client = MagicMock(spec=NoOpLangfuseClient)
-    client.start_span.return_value = SpanContext(
-        trace_id="t1", span_id="s1", name="test_agent"
-    )
+    client.start_span.return_value = SpanContext(trace_id="t1", span_id="s1", name="test_agent")
     configure_tracing(client)
 
     class FakeAgent:
@@ -33,9 +32,7 @@ async def test_trace_agent_calls_start_and_end_span() -> None:
 @pytest.mark.asyncio
 async def test_trace_agent_records_error_on_exception() -> None:
     client = MagicMock(spec=NoOpLangfuseClient)
-    client.start_span.return_value = SpanContext(
-        trace_id="t2", span_id="s2", name="bad_agent"
-    )
+    client.start_span.return_value = SpanContext(trace_id="t2", span_id="s2", name="bad_agent")
     configure_tracing(client)
 
     class BrokenAgent:

@@ -1,0 +1,56 @@
+{
+  "id": "sec_02",
+  "category": "security",
+  "title": "Implement PDF report generation and file download handler",
+  "author": "eval-bot",
+  "base_sha": "0000000000000000000000000000000000000000",
+  "head_sha": "1111111111111111111111111111111111111111",
+  "base_branch": "main",
+  "head_branch": "feature",
+  "changed_files": [
+    {
+      "path": "services/reports/generator.py",
+      "status": "modified",
+      "additions": 4,
+      "deletions": 6
+    }
+  ],
+  "context_units": [
+    {
+      "file_path": "services/reports/generator.py",
+      "node_type": "module",
+      "node_name": "generator",
+      "start_line": 1,
+      "end_line": 16,
+      "body_old": "import subprocess\nfrom pathlib import Path\n\nREPORT_DIR = Path(\"/var/app/reports\")\n\n\ndef generate_report(report_type: str, output_name: str) -> Path:\n    safe_name = Path(output_name).name\n    output_path = REPORT_DIR / safe_name\n    cmd = [\"pdfgen\", \"--type\", report_type, \"--output\", str(output_path)]\n    subprocess.run(cmd, check=True)\n    return output_path\n\n\ndef read_report(filename: str) -> bytes:\n    safe = Path(filename).name\n    path = REPORT_DIR / safe\n    return path.read_bytes()\n",
+      "body_new": "import subprocess\nfrom pathlib import Path\n\nREPORT_DIR = Path(\"/var/app/reports\")\n\n\ndef generate_report(report_type: str, output_name: str) -> Path:\n    output_path = REPORT_DIR / output_name\n    cmd = f\"pdfgen --type {report_type} --output {output_path}\"\n    subprocess.run(cmd, shell=True, check=True)\n    return output_path\n\n\ndef read_report(filename: str) -> bytes:\n    path = Path(str(REPORT_DIR) + \"/\" + filename)\n    return path.read_bytes()\n",
+      "diff_patch": "--- a/services/reports/generator.py\n+++ b/services/reports/generator.py\n@@ -5,14 +5,12 @@\n \n \n def generate_report(report_type: str, output_name: str) -> Path:\n-    safe_name = Path(output_name).name\n-    output_path = REPORT_DIR / safe_name\n-    cmd = [\"pdfgen\", \"--type\", report_type, \"--output\", str(output_path)]\n-    subprocess.run(cmd, check=True)\n+    output_path = REPORT_DIR / output_name\n+    cmd = f\"pdfgen --type {report_type} --output {output_path}\"\n+    subprocess.run(cmd, shell=True, check=True)\n     return output_path\n \n \n def read_report(filename: str) -> bytes:\n-    safe = Path(filename).name\n-    path = REPORT_DIR / safe\n+    path = Path(str(REPORT_DIR) + \"/\" + filename)\n     return path.read_bytes()\n",
+      "language": "python"
+    }
+  ],
+  "raw_diff_chunks": [
+    {
+      "file_path": "services/reports/generator.py",
+      "patch": "--- a/services/reports/generator.py\n+++ b/services/reports/generator.py\n@@ -5,14 +5,12 @@\n \n \n def generate_report(report_type: str, output_name: str) -> Path:\n-    safe_name = Path(output_name).name\n-    output_path = REPORT_DIR / safe_name\n-    cmd = [\"pdfgen\", \"--type\", report_type, \"--output\", str(output_path)]\n-    subprocess.run(cmd, check=True)\n+    output_path = REPORT_DIR / output_name\n+    cmd = f\"pdfgen --type {report_type} --output {output_path}\"\n+    subprocess.run(cmd, shell=True, check=True)\n     return output_path\n \n \n def read_report(filename: str) -> bytes:\n-    safe = Path(filename).name\n-    path = REPORT_DIR / safe\n+    path = Path(str(REPORT_DIR) + \"/\" + filename)\n     return path.read_bytes()\n",
+      "language": "python"
+    }
+  ],
+  "expected_findings": [
+    {
+      "category": "security",
+      "file_path": "services/reports/generator.py",
+      "line_start": 10,
+      "line_end": 10,
+      "title": "OS command injection via shell=True with user-controlled input",
+      "rationale": "report_type is caller-supplied and interpolated into a shell command string executed with shell=True. An attacker can inject shell metacharacters (e.g. '; rm -rf /') to run arbitrary commands on the host."
+    },
+    {
+      "category": "security",
+      "file_path": "services/reports/generator.py",
+      "line_start": 15,
+      "line_end": 15,
+      "title": "Path traversal in report download — filename not sanitised",
+      "rationale": "filename is joined to REPORT_DIR without stripping directory components. A value like '../../etc/passwd' resolves outside the intended directory, exposing arbitrary filesystem paths."
+    }
+  ]
+}

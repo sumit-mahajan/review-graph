@@ -1,14 +1,14 @@
 """Sample PR data for agent tests — no real Gemini calls needed."""
+
 from uuid import uuid4
 
+from domain.value_objects.agent_type import AgentType
 from infrastructure.ai.graph.state import (
     ChangedFile,
     PRMetadata,
     RawDiffChunk,
     ReviewState,
 )
-from domain.value_objects.agent_type import AgentType
-
 
 SAMPLE_PATCH = """\
 diff --git a/src/auth/handlers.py b/src/auth/handlers.py

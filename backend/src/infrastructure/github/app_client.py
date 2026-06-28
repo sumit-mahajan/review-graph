@@ -1,6 +1,5 @@
 import base64
 import time
-from datetime import UTC, datetime
 from pathlib import Path
 
 import httpx
@@ -46,9 +45,7 @@ class GithubAppClient(IGithubAppClient):
         }
         return jwt.encode(payload, self._private_key_pem, algorithm="RS256")
 
-    async def get_installation_access_token(
-        self, installation_id: int
-    ) -> InstallationAccessToken:
+    async def get_installation_access_token(self, installation_id: int) -> InstallationAccessToken:
         app_jwt = self.create_app_jwt()
         url = f"{GITHUB_API}/app/installations/{installation_id}/access_tokens"
         response = await self._http.post(
@@ -81,9 +78,7 @@ class GithubAppClient(IGithubAppClient):
             },
         )
         if response.status_code >= 400:
-            raise ExternalServiceError(
-                f"GitHub list repositories failed: {response.status_code}"
-            )
+            raise ExternalServiceError(f"GitHub list repositories failed: {response.status_code}")
 
         data = response.json()
         repositories = data.get("repositories", [])

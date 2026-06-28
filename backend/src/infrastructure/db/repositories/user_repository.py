@@ -11,9 +11,7 @@ class PostgresUserRepository(IUserRepository):
         self._session = session
 
     async def get_by_github_id(self, github_id: int) -> User | None:
-        result = await self._session.execute(
-            select(UserORM).where(UserORM.github_id == github_id)
-        )
+        result = await self._session.execute(select(UserORM).where(UserORM.github_id == github_id))
         orm = result.scalar_one_or_none()
         return _to_entity(orm) if orm else None
 

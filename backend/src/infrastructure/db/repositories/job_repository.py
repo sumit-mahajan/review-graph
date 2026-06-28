@@ -87,9 +87,7 @@ class PostgresJobRepository(IJobRepository):
         return to_job_entity(orm)
 
     async def claim_next_pending(self, max_attempts: int) -> ReviewJob | None:
-        orm = await claim_next_pending_job(
-            self._session, ReviewJobORM, max_attempts=max_attempts
-        )
+        orm = await claim_next_pending_job(self._session, ReviewJobORM, max_attempts=max_attempts)
         return to_job_entity(orm) if orm is not None else None  # type: ignore[arg-type]
 
     async def release_stale_running(self, stale_minutes: int, max_attempts: int) -> int:

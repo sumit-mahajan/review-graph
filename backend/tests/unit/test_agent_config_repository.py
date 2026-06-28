@@ -1,4 +1,5 @@
 """Unit tests for PostgresAgentConfigRepository.ensure_default SQL shape."""
+
 from unittest.mock import AsyncMock, MagicMock
 from uuid import uuid4
 

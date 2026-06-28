@@ -1,0 +1,39 @@
+{
+  "id": "clean_01",
+  "category": "clean",
+  "title": "Add paginated product catalog service with input validation",
+  "author": "eval-bot",
+  "base_sha": "0000000000000000000000000000000000000000",
+  "head_sha": "1111111111111111111111111111111111111111",
+  "base_branch": "main",
+  "head_branch": "feature",
+  "changed_files": [
+    {
+      "path": "app/products/catalog.py",
+      "status": "added",
+      "additions": 40,
+      "deletions": 0
+    }
+  ],
+  "context_units": [
+    {
+      "file_path": "app/products/catalog.py",
+      "node_type": "module",
+      "node_name": "catalog",
+      "start_line": 1,
+      "end_line": 40,
+      "body_old": "",
+      "body_new": "from dataclasses import dataclass\nfrom typing import Optional\n\nfrom app.repositories.product_repo import ProductRepository\n\n\n@dataclass\nclass ProductPage:\n    items: list[dict]\n    total: int\n    page: int\n    page_size: int\n\n\nclass CatalogService:\n    def __init__(self, repo: ProductRepository) -> None:\n        self._repo = repo\n\n    def list_products(\n        self,\n        category: Optional[str] = None,\n        page: int = 1,\n        page_size: int = 20,\n    ) -> ProductPage:\n        if page < 1:\n            raise ValueError(\"page must be >= 1\")\n        if not 1 <= page_size <= 100:\n            raise ValueError(\"page_size must be between 1 and 100\")\n        offset = (page - 1) * page_size\n        items, total = self._repo.find(\n            category=category,\n            offset=offset,\n            limit=page_size,\n        )\n        return ProductPage(\n            items=[i.to_dict() for i in items],\n            total=total,\n            page=page,\n            page_size=page_size,\n        )\n",
+      "diff_patch": "@@ -0,0 +1,40 @@\n+from dataclasses import dataclass\n+from typing import Optional\n+\n+from app.repositories.product_repo import ProductRepository\n+\n+\n+@dataclass\n+class ProductPage:\n+    items: list[dict]\n+    total: int\n+    page: int\n+    page_size: int\n+\n+\n+class CatalogService:\n+    def __init__(self, repo: ProductRepository) -> None:\n+        self._repo = repo\n+\n+    def list_products(\n+        self,\n+        category: Optional[str] = None,\n+        page: int = 1,\n+        page_size: int = 20,\n+    ) -> ProductPage:\n+        if page < 1:\n+            raise ValueError(\"page must be >= 1\")\n+        if not 1 <= page_size <= 100:\n+            raise ValueError(\"page_size must be between 1 and 100\")\n+        offset = (page - 1) * page_size\n+        items, total = self._repo.find(\n+            category=category,\n+            offset=offset,\n+            limit=page_size,\n+        )\n+        return ProductPage(\n+            items=[i.to_dict() for i in items],\n+            total=total,\n+            page=page,\n+            page_size=page_size,\n+        )\n",
+      "language": "python"
+    }
+  ],
+  "raw_diff_chunks": [
+    {
+      "file_path": "app/products/catalog.py",
+      "patch": "@@ -0,0 +1,40 @@\n+from dataclasses import dataclass\n+from typing import Optional\n+\n+from app.repositories.product_repo import ProductRepository\n+\n+\n+@dataclass\n+class ProductPage:\n+    items: list[dict]\n+    total: int\n+    page: int\n+    page_size: int\n+\n+\n+class CatalogService:\n+    def __init__(self, repo: ProductRepository) -> None:\n+        self._repo = repo\n+\n+    def list_products(\n+        self,\n+        category: Optional[str] = None,\n+        page: int = 1,\n+        page_size: int = 20,\n+    ) -> ProductPage:\n+        if page < 1:\n+            raise ValueError(\"page must be >= 1\")\n+        if not 1 <= page_size <= 100:\n+            raise ValueError(\"page_size must be between 1 and 100\")\n+        offset = (page - 1) * page_size\n+        items, total = self._repo.find(\n+            category=category,\n+            offset=offset,\n+            limit=page_size,\n+        )\n+        return ProductPage(\n+            items=[i.to_dict() for i in items],\n+            total=total,\n+            page=page,\n+            page_size=page_size,\n+        )\n",
+      "language": "python"
+    }
+  ],
+  "expected_findings": []
+}

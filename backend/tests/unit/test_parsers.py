@@ -1,9 +1,8 @@
 """Tests for tree-sitter Python and TypeScript parsers."""
-import pytest
 
+from infrastructure.parsers.parser_registry import get_parser, lang_for_path
 from infrastructure.parsers.python_parser import PythonParser
 from infrastructure.parsers.typescript_parser import TypeScriptParser
-from infrastructure.parsers.parser_registry import get_parser, lang_for_path
 from tests.fixtures.python_sample import PYTHON_SOURCE, TYPESCRIPT_SOURCE
 
 

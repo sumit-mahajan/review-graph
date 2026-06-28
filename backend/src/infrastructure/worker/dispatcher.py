@@ -3,6 +3,7 @@ WorkerDispatcher — routes jobs to the correct use case.
 
 Supports DB-polled jobs (by ID) and legacy Redis JSON payloads.
 """
+
 import asyncio
 import json
 from uuid import UUID
@@ -86,7 +87,7 @@ class WorkerDispatcher:
         if job_id is None:
             await logger.aerror("worker_review_invalid_job_id", job_id=job_id_raw)
             return True
-        attempt = int(payload.get("attempt", 0))
+        attempt = int(str(payload.get("attempt", 0)))
 
         if attempt > 0 and attempt <= len(RETRY_BACKOFF_SECONDS):
             delay = RETRY_BACKOFF_SECONDS[attempt - 1]

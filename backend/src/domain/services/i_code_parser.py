@@ -4,9 +4,9 @@ from dataclasses import dataclass
 
 @dataclass(frozen=True)
 class ParsedNode:
-    node_type: str     # function | class | module
+    node_type: str  # function | class | module
     node_name: str
-    start_line: int    # 1-indexed
+    start_line: int  # 1-indexed
     end_line: int
     body: str
 

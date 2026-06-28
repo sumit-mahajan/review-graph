@@ -1,6 +1,6 @@
-from enum import Enum
+from enum import StrEnum
 
 
-class JobType(str, Enum):
+class JobType(StrEnum):
     REVIEW = "review"
     EMBEDDING_CLEANUP = "embedding_cleanup"

@@ -1,0 +1,56 @@
+{
+  "id": "arch_01",
+  "category": "arch",
+  "title": "Add order retrieval route and warehouse notification on domain model",
+  "author": "eval-bot",
+  "base_sha": "0000000000000000000000000000000000000000",
+  "head_sha": "1111111111111111111111111111111111111111",
+  "base_branch": "main",
+  "head_branch": "feature",
+  "changed_files": [
+    {
+      "path": "routes/orders.py",
+      "status": "modified",
+      "additions": 24,
+      "deletions": 5
+    }
+  ],
+  "context_units": [
+    {
+      "file_path": "routes/orders.py",
+      "node_type": "module",
+      "node_name": "orders_routes",
+      "start_line": 1,
+      "end_line": 32,
+      "body_old": "from flask import Blueprint, jsonify\nfrom services.order_service import OrderService\n\norders_bp = Blueprint(\"orders\", __name__)\n_svc = OrderService()\n\n\n@orders_bp.route(\"/orders/<int:order_id>\", methods=[\"GET\"])\ndef get_order(order_id: int):\n    order = _svc.get_by_id(order_id)\n    if order is None:\n        return jsonify({\"error\": \"not found\"}), 404\n    return jsonify(order.to_dict())\n",
+      "body_new": "import psycopg2\nimport requests as http_client\nfrom flask import Blueprint, jsonify\n\norders_bp = Blueprint(\"orders\", __name__)\n\n\n@orders_bp.route(\"/orders/<int:order_id>\", methods=[\"GET\"])\ndef get_order(order_id: int):\n    conn = psycopg2.connect(\"postgresql://app:pass@db-host/shop\")\n    cur = conn.cursor()\n    cur.execute(\"SELECT id, user_id, total FROM orders WHERE id = %s\", (order_id,))\n    row = cur.fetchone()\n    conn.close()\n    if row is None:\n        return jsonify({\"error\": \"not found\"}), 404\n    return jsonify({\"id\": row[0], \"user_id\": row[1], \"total\": float(row[2])})\n\n\nclass Order:\n    def __init__(self, order_id: int, user_id: int, total: float) -> None:\n        self.order_id = order_id\n        self.user_id = user_id\n        self.total = total\n\n    def notify_warehouse(self) -> bool:\n        resp = http_client.post(\n            \"https://warehouse.internal/api/pick\",\n            json={\"order_id\": self.order_id, \"user_id\": self.user_id},\n            timeout=5,\n        )\n        return resp.status_code == 200\n",
+      "diff_patch": "--- a/routes/orders.py\n+++ b/routes/orders.py\n@@ -1,13 +1,32 @@\n+import psycopg2\n+import requests as http_client\n from flask import Blueprint, jsonify\n-from services.order_service import OrderService\n \n orders_bp = Blueprint(\"orders\", __name__)\n-_svc = OrderService()\n \n \n @orders_bp.route(\"/orders/<int:order_id>\", methods=[\"GET\"])\n def get_order(order_id: int):\n-    order = _svc.get_by_id(order_id)\n-    if order is None:\n+    conn = psycopg2.connect(\"postgresql://app:pass@db-host/shop\")\n+    cur = conn.cursor()\n+    cur.execute(\"SELECT id, user_id, total FROM orders WHERE id = %s\", (order_id,))\n+    row = cur.fetchone()\n+    conn.close()\n+    if row is None:\n         return jsonify({\"error\": \"not found\"}), 404\n-    return jsonify(order.to_dict())\n+    return jsonify({\"id\": row[0], \"user_id\": row[1], \"total\": float(row[2])})\n+\n+\n+class Order:\n+    def __init__(self, order_id: int, user_id: int, total: float) -> None:\n+        self.order_id = order_id\n+        self.user_id = user_id\n+        self.total = total\n+\n+    def notify_warehouse(self) -> bool:\n+        resp = http_client.post(\n+            \"https://warehouse.internal/api/pick\",\n+            json={\"order_id\": self.order_id, \"user_id\": self.user_id},\n+            timeout=5,\n+        )\n+        return resp.status_code == 200\n",
+      "language": "python"
+    }
+  ],
+  "raw_diff_chunks": [
+    {
+      "file_path": "routes/orders.py",
+      "patch": "--- a/routes/orders.py\n+++ b/routes/orders.py\n@@ -1,13 +1,32 @@\n+import psycopg2\n+import requests as http_client\n from flask import Blueprint, jsonify\n-from services.order_service import OrderService\n \n orders_bp = Blueprint(\"orders\", __name__)\n-_svc = OrderService()\n \n \n @orders_bp.route(\"/orders/<int:order_id>\", methods=[\"GET\"])\n def get_order(order_id: int):\n-    order = _svc.get_by_id(order_id)\n-    if order is None:\n+    conn = psycopg2.connect(\"postgresql://app:pass@db-host/shop\")\n+    cur = conn.cursor()\n+    cur.execute(\"SELECT id, user_id, total FROM orders WHERE id = %s\", (order_id,))\n+    row = cur.fetchone()\n+    conn.close()\n+    if row is None:\n         return jsonify({\"error\": \"not found\"}), 404\n-    return jsonify(order.to_dict())\n+    return jsonify({\"id\": row[0], \"user_id\": row[1], \"total\": float(row[2])})\n+\n+\n+class Order:\n+    def __init__(self, order_id: int, user_id: int, total: float) -> None:\n+        self.order_id = order_id\n+        self.user_id = user_id\n+        self.total = total\n+\n+    def notify_warehouse(self) -> bool:\n+        resp = http_client.post(\n+            \"https://warehouse.internal/api/pick\",\n+            json={\"order_id\": self.order_id, \"user_id\": self.user_id},\n+            timeout=5,\n+        )\n+        return resp.status_code == 200\n",
+      "language": "python"
+    }
+  ],
+  "expected_findings": [
+    {
+      "category": "arch",
+      "file_path": "routes/orders.py",
+      "line_start": 10,
+      "line_end": 10,
+      "title": "Direct database connection opened inside a route handler",
+      "rationale": "The route handler opens a raw psycopg2 connection and executes SQL instead of delegating to a service/repository layer. This mixes HTTP and persistence concerns, hard-codes credentials, and bypasses connection pooling."
+    },
+    {
+      "category": "arch",
+      "file_path": "routes/orders.py",
+      "line_start": 27,
+      "line_end": 27,
+      "title": "Outbound HTTP call embedded in a domain model method",
+      "rationale": "The Order domain model makes a direct outbound HTTP request in notify_warehouse(). Domain models should contain pure business logic; side-effects like network calls belong in a service or infrastructure adapter invoked by the caller."
+    }
+  ]
+}

@@ -1,4 +1,5 @@
 """Tests for PersistReviewUseCase."""
+
 from datetime import UTC, datetime
 from uuid import uuid4
 

@@ -1,7 +1,7 @@
 import secrets
 
-from application.dtos.dashboard_mappers import to_user_dto
 from api.schemas.dashboard import AuthTokenDTO
+from application.dtos.dashboard_mappers import to_user_dto
 from domain.repositories.i_user_repository import IUserRepository, UpsertUserParams
 from domain.services.i_github_oauth_client import IGithubOAuthClient
 from domain.services.i_jwt_service import IJwtService

@@ -1,5 +1,8 @@
-from application.dtos.dashboard_mappers import to_repo_dto
+from uuid import UUID
+
 from api.schemas.dashboard import RepoDTO
+from application.dtos.dashboard_mappers import to_repo_dto
+from domain.entities.repository import Repository
 from domain.entities.user import User
 from domain.errors import EntityNotFoundError, ForbiddenError
 from domain.repositories.i_agent_config_repository import IAgentConfigRepository
@@ -27,17 +30,17 @@ class ListReposUseCase:
 def assert_repo_access(user: User, repo_owner: str) -> None:
     """Raise ForbiddenError when user cannot manage this repository."""
     if user.login != repo_owner:
-        raise ForbiddenError(f"User '{user.login}' cannot access repository owned by '{repo_owner}'")
+        raise ForbiddenError(
+            f"User '{user.login}' cannot access repository owned by '{repo_owner}'"
+        )
 
 
 async def get_repo_for_user(
     repo_repo: IRepoRepository,
     user: User,
-    repository_id: object,
-) -> object:
-    from uuid import UUID
-
-    repo = await repo_repo.get_by_id(UUID(str(repository_id)))
+    repository_id: UUID,
+) -> Repository:
+    repo = await repo_repo.get_by_id(repository_id)
     if repo is None:
         raise EntityNotFoundError(f"Repository {repository_id} not found")
     assert_repo_access(user, repo.owner)

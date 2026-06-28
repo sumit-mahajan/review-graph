@@ -1,9 +1,5 @@
 """Map domain entities to API DTOs."""
-from domain.entities.agent_config import AgentConfig
-from domain.entities.job import ReviewJob
-from domain.entities.repository import Repository
-from domain.entities.review import Finding, Review
-from domain.entities.user import User
+
 from api.schemas.dashboard import (
     AgentConfigDTO,
     FindingDTO,
@@ -13,6 +9,11 @@ from api.schemas.dashboard import (
     ReviewSummaryDTO,
     UserDTO,
 )
+from domain.entities.agent_config import AgentConfig
+from domain.entities.job import ReviewJob
+from domain.entities.repository import Repository
+from domain.entities.review import Finding, Review
+from domain.entities.user import User
 
 
 def to_user_dto(user: User) -> UserDTO:

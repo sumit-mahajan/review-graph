@@ -1,4 +1,5 @@
 """Tests for UpstashRedisClient.enqueue."""
+
 import json
 from unittest.mock import MagicMock, patch
 from uuid import uuid4

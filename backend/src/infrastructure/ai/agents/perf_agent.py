@@ -27,12 +27,10 @@ class PerfAgent:
             + "\n\nFind all performance issues in the changed code above."
         )
 
-        output = await self._gemini.generate(
-            prompt, AgentOutput, system_prompt=PERF_SYSTEM
-        )
+        output = await self._gemini.generate(prompt, AgentOutput, system_prompt=PERF_SYSTEM)
 
         new_findings = findings_from_output(output, agent_source=CATEGORY)
         for f in new_findings:
             f.category = CATEGORY
 
-        return {**state, "findings": list(state["findings"]) + new_findings}  # type: ignore[return-value]
+        return {**state, "findings": list(state["findings"]) + new_findings}

@@ -1,0 +1,68 @@
+{
+  "id": "py_arch_03",
+  "category": "arch",
+  "title": "Wire user and order services together",
+  "author": "eval-bot",
+  "base_sha": "0000000000000000000000000000000000000000",
+  "head_sha": "1111111111111111111111111111111111111111",
+  "base_branch": "main",
+  "head_branch": "feature/services",
+  "changed_files": [
+    { "path": "services/user_service.py", "status": "added", "additions": 9, "deletions": 0 },
+    { "path": "services/order_service.py", "status": "added", "additions": 7, "deletions": 0 }
+  ],
+  "context_units": [
+    {
+      "file_path": "services/user_service.py",
+      "node_type": "module",
+      "node_name": "user_service",
+      "start_line": 1,
+      "end_line": 9,
+      "body_old": "",
+      "body_new": "from services.order_service import OrderService\n\n\nclass UserService:\n    def __init__(self):\n        self.orders = OrderService()\n\n    def get_user_orders(self, user_id):\n        return self.orders.for_user(user_id)\n",
+      "diff_patch": "@@ -0,0 +1,9 @@\n+from services.order_service import OrderService\n+\n+\n+class UserService:\n+    def __init__(self):\n+        self.orders = OrderService()\n+\n+    def get_user_orders(self, user_id):\n+        return self.orders.for_user(user_id)",
+      "language": "python"
+    },
+    {
+      "file_path": "services/order_service.py",
+      "node_type": "module",
+      "node_name": "order_service",
+      "start_line": 1,
+      "end_line": 7,
+      "body_old": "",
+      "body_new": "from services.user_service import UserService\n\n\nclass OrderService:\n    def for_user(self, user_id):\n        user = UserService().get_user_orders(user_id)\n        return user\n",
+      "diff_patch": "@@ -0,0 +1,7 @@\n+from services.user_service import UserService\n+\n+\n+class OrderService:\n+    def for_user(self, user_id):\n+        user = UserService().get_user_orders(user_id)\n+        return user",
+      "language": "python"
+    }
+  ],
+  "raw_diff_chunks": [
+    {
+      "file_path": "services/user_service.py",
+      "patch": "@@ -0,0 +1,9 @@\n+from services.order_service import OrderService\n+\n+\n+class UserService:\n+    def __init__(self):\n+        self.orders = OrderService()\n+\n+    def get_user_orders(self, user_id):\n+        return self.orders.for_user(user_id)",
+      "language": "python"
+    },
+    {
+      "file_path": "services/order_service.py",
+      "patch": "@@ -0,0 +1,7 @@\n+from services.user_service import UserService\n+\n+\n+class OrderService:\n+    def for_user(self, user_id):\n+        user = UserService().get_user_orders(user_id)\n+        return user",
+      "language": "python"
+    }
+  ],
+  "expected_findings": [
+    {
+      "category": "arch",
+      "file_path": "services/user_service.py",
+      "line_start": 1,
+      "line_end": 1,
+      "title": "Circular dependency between user and order services",
+      "rationale": "user_service imports order_service while order_service imports user_service, creating a circular dependency and tight coupling between the two modules."
+    },
+    {
+      "category": "arch",
+      "file_path": "services/order_service.py",
+      "line_start": 6,
+      "line_end": 6,
+      "title": "Mutual recursion across coupled services",
+      "rationale": "OrderService.for_user calls back into UserService.get_user_orders which delegates to OrderService, producing infinite mutual recursion driven by the circular coupling."
+    }
+  ]
+}

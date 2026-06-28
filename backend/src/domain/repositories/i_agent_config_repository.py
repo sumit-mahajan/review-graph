@@ -24,7 +24,5 @@ class IAgentConfigRepository(ABC):
         """Create default config if missing (called on repo install)."""
 
     @abstractmethod
-    async def update(
-        self, repository_id: UUID, params: UpdateAgentConfigParams
-    ) -> AgentConfig:
+    async def update(self, repository_id: UUID, params: UpdateAgentConfigParams) -> AgentConfig:
         """Patch agent toggles and min severity."""

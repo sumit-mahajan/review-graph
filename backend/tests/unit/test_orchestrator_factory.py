@@ -1,8 +1,9 @@
 """Tests for orchestrator factory."""
+
 from unittest.mock import MagicMock
 
-from infrastructure.ai.orchestrator_factory import build_orchestrator
 from infrastructure.ai.langgraph_orchestrator import LanggraphOrchestrator
+from infrastructure.ai.orchestrator_factory import build_orchestrator
 from infrastructure.ai.stub_orchestrator import StubAgentOrchestrator
 from infrastructure.config.settings import Settings
 

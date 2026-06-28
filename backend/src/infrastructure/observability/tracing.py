@@ -9,6 +9,7 @@ Usage:
 The decorator reads the Langfuse trace_id from state["trace_id"] and
 records span start/end with token usage and latency automatically.
 """
+
 from __future__ import annotations
 
 import functools
@@ -51,8 +52,7 @@ def trace_agent(name: str) -> Callable[[F], F]:
             error_msg: str | None = None
 
             try:
-                result = await fn(*args, **kwargs)
-                return result
+                return await fn(*args, **kwargs)
             except Exception as exc:
                 error_msg = f"{type(exc).__name__}: {exc}"
                 raise

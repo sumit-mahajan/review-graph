@@ -28,9 +28,7 @@ class Settings(BaseSettings):
     upstash_redis_token: str | None = Field(default=None, alias="UPSTASH_REDIS_TOKEN")
     redis_queue_stream: str = Field(default="review_jobs", alias="REDIS_QUEUE_STREAM")
 
-    worker_poll_interval_seconds: float = Field(
-        default=5.0, alias="WORKER_POLL_INTERVAL_SECONDS"
-    )
+    worker_poll_interval_seconds: float = Field(default=5.0, alias="WORKER_POLL_INTERVAL_SECONDS")
     worker_stale_running_minutes: int = Field(default=15, alias="WORKER_STALE_RUNNING_MINUTES")
 
     github_app_id: str = Field(default="", alias="GITHUB_APP_ID")

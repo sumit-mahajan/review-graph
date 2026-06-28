@@ -1,4 +1,5 @@
 """Dashboard API route tests — auth enforcement."""
+
 from datetime import UTC, datetime
 from uuid import uuid4
 

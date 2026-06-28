@@ -5,6 +5,7 @@ Triggered by two paths:
   1. pull_request.closed webhook → delete embeddings for that specific head_sha
   2. Weekly background job → delete all rows older than N days
 """
+
 from uuid import UUID
 
 import structlog

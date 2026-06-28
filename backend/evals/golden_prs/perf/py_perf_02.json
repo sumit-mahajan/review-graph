@@ -1,0 +1,51 @@
+{
+  "id": "py_perf_02",
+  "category": "perf",
+  "title": "Add async URL fetcher",
+  "author": "eval-bot",
+  "base_sha": "0000000000000000000000000000000000000000",
+  "head_sha": "1111111111111111111111111111111111111111",
+  "base_branch": "main",
+  "head_branch": "feature/fetch-all",
+  "changed_files": [
+    { "path": "app/fetcher.py", "status": "added", "additions": 11, "deletions": 0 }
+  ],
+  "context_units": [
+    {
+      "file_path": "app/fetcher.py",
+      "node_type": "function",
+      "node_name": "fetch_all",
+      "start_line": 1,
+      "end_line": 11,
+      "body_old": "",
+      "body_new": "import time\nimport requests\n\n\nasync def fetch_all(urls):\n    results = []\n    for url in urls:\n        response = requests.get(url)\n        results.append(response.json())\n        time.sleep(1)\n    return results\n",
+      "diff_patch": "@@ -0,0 +1,11 @@\n+import time\n+import requests\n+\n+\n+async def fetch_all(urls):\n+    results = []\n+    for url in urls:\n+        response = requests.get(url)\n+        results.append(response.json())\n+        time.sleep(1)\n+    return results",
+      "language": "python"
+    }
+  ],
+  "raw_diff_chunks": [
+    {
+      "file_path": "app/fetcher.py",
+      "patch": "@@ -0,0 +1,11 @@\n+import time\n+import requests\n+\n+\n+async def fetch_all(urls):\n+    results = []\n+    for url in urls:\n+        response = requests.get(url)\n+        results.append(response.json())\n+        time.sleep(1)\n+    return results",
+      "language": "python"
+    }
+  ],
+  "expected_findings": [
+    {
+      "category": "perf",
+      "file_path": "app/fetcher.py",
+      "line_start": 8,
+      "line_end": 8,
+      "title": "Blocking HTTP call inside async function",
+      "rationale": "requests.get is synchronous and blocks the event loop inside an async function; an async client (httpx) with gathered requests should be used."
+    },
+    {
+      "category": "perf",
+      "file_path": "app/fetcher.py",
+      "line_start": 10,
+      "line_end": 10,
+      "title": "Blocking time.sleep in async coroutine",
+      "rationale": "time.sleep blocks the event loop; await asyncio.sleep must be used in async code."
+    }
+  ]
+}

@@ -1,0 +1,64 @@
+{
+  "id": "sec_03",
+  "category": "security",
+  "title": "Add session token creation and admin action gateway",
+  "author": "eval-bot",
+  "base_sha": "0000000000000000000000000000000000000000",
+  "head_sha": "1111111111111111111111111111111111111111",
+  "base_branch": "main",
+  "head_branch": "feature",
+  "changed_files": [
+    {
+      "path": "app/sessions.py",
+      "status": "added",
+      "additions": 24,
+      "deletions": 0
+    }
+  ],
+  "context_units": [
+    {
+      "file_path": "app/sessions.py",
+      "node_type": "module",
+      "node_name": "sessions",
+      "start_line": 1,
+      "end_line": 24,
+      "body_old": "",
+      "body_new": "import hashlib\nimport pickle\nimport base64\nfrom flask import request\n\nSESSION_SECRET = \"s3cr3t-salt\"\n\n\ndef create_session_token(user_id: int, role: str) -> str:\n    payload = f\"{user_id}:{role}\"\n    digest = hashlib.md5((payload + SESSION_SECRET).encode()).hexdigest()\n    return base64.b64encode(f\"{payload}:{digest}\".encode()).decode()\n\n\ndef verify_and_load_session(token: str) -> dict:\n    raw = base64.b64decode(token.encode())\n    session_data = pickle.loads(raw)\n    return session_data\n\n\ndef admin_action(action_name: str) -> dict:\n    token = request.headers.get(\"X-Session-Token\", \"\")\n    session = verify_and_load_session(token)\n    return execute_admin_task(action_name, session[\"user_id\"])\n",
+      "diff_patch": "@@ -0,0 +1,24 @@\n+import hashlib\n+import pickle\n+import base64\n+from flask import request\n+\n+SESSION_SECRET = \"s3cr3t-salt\"\n+\n+\n+def create_session_token(user_id: int, role: str) -> str:\n+    payload = f\"{user_id}:{role}\"\n+    digest = hashlib.md5((payload + SESSION_SECRET).encode()).hexdigest()\n+    return base64.b64encode(f\"{payload}:{digest}\".encode()).decode()\n+\n+\n+def verify_and_load_session(token: str) -> dict:\n+    raw = base64.b64decode(token.encode())\n+    session_data = pickle.loads(raw)\n+    return session_data\n+\n+\n+def admin_action(action_name: str) -> dict:\n+    token = request.headers.get(\"X-Session-Token\", \"\")\n+    session = verify_and_load_session(token)\n+    return execute_admin_task(action_name, session[\"user_id\"])\n",
+      "language": "python"
+    }
+  ],
+  "raw_diff_chunks": [
+    {
+      "file_path": "app/sessions.py",
+      "patch": "@@ -0,0 +1,24 @@\n+import hashlib\n+import pickle\n+import base64\n+from flask import request\n+\n+SESSION_SECRET = \"s3cr3t-salt\"\n+\n+\n+def create_session_token(user_id: int, role: str) -> str:\n+    payload = f\"{user_id}:{role}\"\n+    digest = hashlib.md5((payload + SESSION_SECRET).encode()).hexdigest()\n+    return base64.b64encode(f\"{payload}:{digest}\".encode()).decode()\n+\n+\n+def verify_and_load_session(token: str) -> dict:\n+    raw = base64.b64decode(token.encode())\n+    session_data = pickle.loads(raw)\n+    return session_data\n+\n+\n+def admin_action(action_name: str) -> dict:\n+    token = request.headers.get(\"X-Session-Token\", \"\")\n+    session = verify_and_load_session(token)\n+    return execute_admin_task(action_name, session[\"user_id\"])\n",
+      "language": "python"
+    }
+  ],
+  "expected_findings": [
+    {
+      "category": "security",
+      "file_path": "app/sessions.py",
+      "line_start": 11,
+      "line_end": 11,
+      "title": "MD5 used for session token integrity — cryptographically broken",
+      "rationale": "MD5 produces a 128-bit hash that can be forged with trivial effort on modern hardware. Session tokens must use HMAC-SHA256 or a dedicated signing library such as itsdangerous."
+    },
+    {
+      "category": "security",
+      "file_path": "app/sessions.py",
+      "line_start": 17,
+      "line_end": 17,
+      "title": "Insecure deserialization of attacker-controlled token",
+      "rationale": "pickle.loads on base64-decoded user input enables arbitrary code execution. Tokens must be signed then deserialized using a safe format such as JSON with HMAC verification."
+    },
+    {
+      "category": "security",
+      "file_path": "app/sessions.py",
+      "line_start": 24,
+      "line_end": 24,
+      "title": "Missing authorization check before dispatching admin task",
+      "rationale": "The function verifies a session exists but never inspects session['role']. Any authenticated user — regardless of privilege level — can invoke administrative operations."
+    }
+  ]
+}

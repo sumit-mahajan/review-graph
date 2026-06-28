@@ -13,7 +13,9 @@ class RepositoryORM(Base, TimestampMixin):
     id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     github_id: Mapped[int] = mapped_column(BigInteger, unique=True, nullable=False)
     installation_id: Mapped[uuid.UUID] = mapped_column(
-        UUID(as_uuid=True), ForeignKey("github_installations.id", ondelete="CASCADE"), nullable=False
+        UUID(as_uuid=True),
+        ForeignKey("github_installations.id", ondelete="CASCADE"),
+        nullable=False,
     )
     owner: Mapped[str] = mapped_column(String(255), nullable=False)
     name: Mapped[str] = mapped_column(String(255), nullable=False)

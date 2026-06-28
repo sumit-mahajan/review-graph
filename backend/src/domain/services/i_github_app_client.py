@@ -24,9 +24,7 @@ class IGithubAppClient(ABC):
         """Create a short-lived GitHub App JWT."""
 
     @abstractmethod
-    async def get_installation_access_token(
-        self, installation_id: int
-    ) -> InstallationAccessToken:
+    async def get_installation_access_token(self, installation_id: int) -> InstallationAccessToken:
         """Exchange app JWT for an installation access token."""
 
     @abstractmethod

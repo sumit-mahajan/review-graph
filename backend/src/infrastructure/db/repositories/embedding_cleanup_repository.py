@@ -1,7 +1,7 @@
 from datetime import UTC, datetime, timedelta
 from uuid import UUID
 
-from sqlalchemy import delete, func, select
+from sqlalchemy import delete
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from domain.repositories.i_embedding_cleanup_repository import IEmbeddingCleanupRepository
@@ -20,7 +20,7 @@ class PostgresEmbeddingCleanupRepository(IEmbeddingCleanupRepository):
             )
         )
         await self._session.commit()
-        return result.rowcount
+        return int(getattr(result, "rowcount", 0) or 0)
 
     async def delete_older_than_days(self, days: int) -> int:
         cutoff = datetime.now(UTC) - timedelta(days=days)
@@ -28,4 +28,4 @@ class PostgresEmbeddingCleanupRepository(IEmbeddingCleanupRepository):
             delete(CodeEmbeddingORM).where(CodeEmbeddingORM.created_at < cutoff)
         )
         await self._session.commit()
-        return result.rowcount
+        return int(getattr(result, "rowcount", 0) or 0)

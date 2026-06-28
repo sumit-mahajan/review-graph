@@ -65,7 +65,7 @@ async def test_claim_next_pending_skips_terminal_failed_jobs() -> None:
             head_sha="b" * 40,
         )
     )
-    job = next(iter(repo._jobs.values()))
+    next(iter(repo._jobs.values()))
     for key, stored in list(repo._jobs.items()):
         repo._jobs[key] = type(stored)(
             id=stored.id,

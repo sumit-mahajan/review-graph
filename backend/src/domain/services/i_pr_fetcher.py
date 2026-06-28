@@ -17,11 +17,11 @@ class PullRequestDiff:
 @dataclass(frozen=True)
 class FilePatch:
     path: str
-    status: str          # added | modified | deleted | renamed
+    status: str  # added | modified | deleted | renamed
     additions: int
     deletions: int
-    patch: str           # unified diff text (may be empty for binary files)
-    old_path: str | None = None   # set for renames
+    patch: str  # unified diff text (may be empty for binary files)
+    old_path: str | None = None  # set for renames
 
 
 class IPrFetcher(ABC):

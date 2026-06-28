@@ -3,15 +3,19 @@ GitHubPrFetcher — fetches PR diffs and file content via the GitHub REST API.
 
 Uses installation access tokens from GithubAppClient.
 """
+
 from __future__ import annotations
 
 import base64
+from typing import TYPE_CHECKING
 
 import httpx
 
 from domain.errors import ExternalServiceError
 from domain.services.i_pr_fetcher import FilePatch, IPrFetcher, PullRequestDiff
-from infrastructure.github.app_client import GithubAppClient
+
+if TYPE_CHECKING:
+    from infrastructure.github.app_client import GithubAppClient
 
 GITHUB_API = "https://api.github.com"
 
@@ -60,19 +64,22 @@ class GitHubPrFetcher(IPrFetcher):
             raise ExternalServiceError(f"GitHub compare JSON failed: {json_response.status_code}")
 
         data = json_response.json()
-        base_branch = data.get("base_commit", {}).get("commit", {}).get("tree", {}).get("sha", base_sha)
+        base_commit = data.get("base_commit", {}).get("commit", {}).get("tree", {})
+        base_branch = base_commit.get("sha", base_sha)
         head_branch = data.get("merge_base_commit", {}).get("sha", head_sha)
 
         file_patches: list[FilePatch] = []
         for f in data.get("files", []):
-            file_patches.append(FilePatch(
-                path=str(f.get("filename", "")),
-                status=str(f.get("status", "modified")),
-                additions=int(f.get("additions", 0)),
-                deletions=int(f.get("deletions", 0)),
-                patch=str(f.get("patch", "")),
-                old_path=f.get("previous_filename"),
-            ))
+            file_patches.append(
+                FilePatch(
+                    path=str(f.get("filename", "")),
+                    status=str(f.get("status", "modified")),
+                    additions=int(f.get("additions", 0)),
+                    deletions=int(f.get("deletions", 0)),
+                    patch=str(f.get("patch", "")),
+                    old_path=f.get("previous_filename"),
+                )
+            )
 
         return PullRequestDiff(
             pr_number=0,  # Not available from compare; caller sets this
@@ -104,7 +111,8 @@ class GitHubPrFetcher(IPrFetcher):
 
         data = response.json()
         if data.get("encoding") == "base64":
-            return base64.b64decode(data["content"].replace("\n", "")).decode("utf-8", errors="replace")
+            raw = data["content"].replace("\n", "")
+            return base64.b64decode(raw).decode("utf-8", errors="replace")
 
         return str(data.get("content", ""))
 
@@ -120,7 +128,8 @@ class GitHubPrFetcher(IPrFetcher):
         response = await self._http.get(url, headers=headers)
         if response.status_code >= 400:
             raise ExternalServiceError(
-                f"GitHub pull request fetch failed: {response.status_code} for {owner}/{repo}#{pr_number}"
+                f"GitHub pull request fetch failed: {response.status_code} "
+                f"for {owner}/{repo}#{pr_number}"
             )
 
         data = response.json()

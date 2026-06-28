@@ -14,19 +14,17 @@ Execution order (matches architecture.mdc Review Package Assembly):
 RAG chunk population (per-agent pgvector queries) is done just before each
 agent runs — wired into LanggraphOrchestrator in F-03.
 """
+
 from __future__ import annotations
 
 import re
+from contextlib import suppress
 from pathlib import PurePosixPath
-from uuid import UUID
+from typing import TYPE_CHECKING
 
 import structlog
 
-from domain.repositories.i_installation_repository import IInstallationRepository
-from domain.repositories.i_repo_repository import IRepoRepository
-from domain.services.i_code_embedding_store import ICodeEmbeddingStore
 from domain.services.i_code_parser import ParsedNode
-from domain.services.i_pr_fetcher import FilePatch, IPrFetcher
 from domain.utils.diff_utils import extract_changed_lines as _extract_changed_lines
 from infrastructure.ai.graph.state import (
     ChangedFile,
@@ -35,6 +33,14 @@ from infrastructure.ai.graph.state import (
     RawDiffChunk,
 )
 from infrastructure.parsers.parser_registry import get_parser, lang_for_path
+
+if TYPE_CHECKING:
+    from uuid import UUID
+
+    from domain.repositories.i_installation_repository import IInstallationRepository
+    from domain.repositories.i_repo_repository import IRepoRepository
+    from domain.services.i_code_embedding_store import ICodeEmbeddingStore
+    from domain.services.i_pr_fetcher import IPrFetcher
 
 logger = structlog.get_logger()
 
@@ -136,11 +142,13 @@ class AssembleReviewPackageUseCase:
                 continue
 
             language = lang_for_path(patch.path) or "unknown"
-            raw_diff_chunks.append(RawDiffChunk(
-                file_path=patch.path,
-                patch=patch.patch,
-                language=language,
-            ))
+            raw_diff_chunks.append(
+                RawDiffChunk(
+                    file_path=patch.path,
+                    patch=patch.patch,
+                    language=language,
+                )
+            )
 
             parser = get_parser(patch.path)
             if parser is None:
@@ -155,13 +163,19 @@ class AssembleReviewPackageUseCase:
                     path=patch.path,
                     ref=head_sha,
                 )
-            except Exception:  # noqa: BLE001
+            except Exception as exc:  # noqa: BLE001
+                await log.awarn(
+                    "review_package_file_fetch_failed",
+                    path=patch.path,
+                    ref=head_sha,
+                    error=str(exc),
+                )
                 continue
 
             # Fetch old file content (empty string for added files)
             old_content = ""
             if patch.status != "added":
-                try:
+                with suppress(Exception):
                     old_content = await self._pr_fetcher.fetch_file_content(
                         installation_id=installation.installation_id,
                         owner=repo.owner,
@@ -169,8 +183,6 @@ class AssembleReviewPackageUseCase:
                         path=patch.path,
                         ref=base_sha,
                     )
-                except Exception:  # noqa: BLE001
-                    pass
 
             # Extract changed line numbers from the patch
             changed_lines = _extract_changed_lines(patch.patch)
@@ -185,17 +197,19 @@ class AssembleReviewPackageUseCase:
                 # Include node if it overlaps with any changed line
                 if any(node.start_line <= ln <= node.end_line for ln in changed_lines):
                     old_node = old_nodes_by_name.get(node.node_name)
-                    context_units.append(ContextUnit(
-                        file_path=patch.path,
-                        node_type=node.node_type,
-                        node_name=node.node_name,
-                        start_line=node.start_line,
-                        end_line=node.end_line,
-                        body_old=old_node.body if old_node else "",
-                        body_new=node.body,
-                        diff_patch=_extract_node_patch(patch.patch, node),
-                        language=language,
-                    ))
+                    context_units.append(
+                        ContextUnit(
+                            file_path=patch.path,
+                            node_type=node.node_type,
+                            node_name=node.node_name,
+                            start_line=node.start_line,
+                            end_line=node.end_line,
+                            body_old=old_node.body if old_node else "",
+                            body_new=node.body,
+                            diff_patch=_extract_node_patch(patch.patch, node),
+                            language=language,
+                        )
+                    )
 
             if self._embedding_store is not None and new_content:
                 stored = await self._index_file_embeddings(
@@ -233,6 +247,9 @@ class AssembleReviewPackageUseCase:
         repo_name: str,
     ) -> int:
         """Embed all function/class chunks for a file plus 1-hop local imports."""
+        store = self._embedding_store
+        if store is None:
+            return 0
         if file_path in embedded_paths or not content.strip():
             return 0
         embedded_paths.add(file_path)
@@ -262,7 +279,7 @@ class AssembleReviewPackageUseCase:
         ]
         if not chunks:
             return 0
-        stored = await self._embedding_store.store_file_chunks(
+        stored = await store.store_file_chunks(
             repository_id=repository_id,
             commit_sha=head_sha,
             file_path=file_path,
@@ -281,7 +298,12 @@ class AssembleReviewPackageUseCase:
                     path=neighbor_path,
                     ref=head_sha,
                 )
-            except Exception:  # noqa: BLE001
+            except Exception as exc:  # noqa: BLE001
+                await logger.awarn(
+                    "review_package_neighbor_fetch_failed",
+                    path=neighbor_path,
+                    error=str(exc),
+                )
                 continue
             if not neighbor_content.strip():
                 continue

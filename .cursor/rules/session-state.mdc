@@ -21,19 +21,20 @@ alwaysApply: true
 | Step 3 — Lock data contracts | DONE | `schema.mdc` (DB schema + DTOs + API contract) |
 | Step 4 — Workspace setup | DONE | `reviewer.mdc`, `backend-standards.mdc`, `frontend-standards.mdc`, `.cursor/hooks.json`, `.pre-commit-config.yaml` |
 | Step 4.5 — Lock deployment config | DONE | `Dockerfile`, `docker-compose.yml`, `.env.example`, `render.yaml`, `vercel.json`, `Makefile`, `.gitignore`, `pyproject.toml`, `package.json`, full dir skeleton |
-| Step 5 — Incremental feature build | IN PROGRESS | F-01 ✓, F-05 ✓, F-07 ✓, F-02 ✓, F-04 ✓ |
+| Step 5 — Incremental feature build | DONE | F-01 ✓, F-02 ✓, F-03 ✓, F-04 ✓, F-05 ✓, F-06 ✓, F-07 ✓, F-08 ✓ |
 
 ---
 
 ## Last Completed Step
 
-F-03 — Code Context & RAG (embed on assembly, per-agent pgvector retrieval, real cleanup repo, queue poison-pill fix). Built uncommitted.
+MVP feature build complete. F-08 Evaluation System committed (`7925222`); follow-up
+lint/format fixes + TS/Next.js golden fixtures committed this session.
 
 ---
 
 ## Current In-Progress
 
-F-06 Web Dashboard — backend dashboard API + React SPA complete. Awaiting user review before commit.
+—
 
 ---
 
@@ -46,20 +47,20 @@ F-06 Web Dashboard — backend dashboard API + React SPA complete. Awaiting user
 | F-07 Observability + DB | DONE (committed) | |
 | F-02 Multi-Agent Pipeline | DONE (committed) | |
 | F-04 Structured Review Output | DONE (committed) | Was built before F-03 (out of order; see retrospective) |
-| F-03 Code Context & RAG | BUILT (uncommitted) | embed→pgvector, RAG per agent, Postgres cleanup repo |
-| F-06 Web Dashboard | BUILT (uncommitted) | Awaiting user review |
-| F-08 Evaluation System | NOT STARTED | P2 |
+| F-03 Code Context & RAG | DONE (committed) | embed→pgvector, RAG per agent, Postgres cleanup repo |
+| F-06 Web Dashboard | DONE (committed) | |
+| F-08 Evaluation System | DONE (committed) | Golden-PR harness, matcher/scorer, eval tables, 30 fixtures (Python + TS) |
 
 ---
 
-## F-03 Acceptance Criteria (verified this session)
+## F-03 Acceptance Criteria (verified)
 
 | Criterion | Status |
 |-----------|--------|
-| tree-sitter chunking at function/class boundaries | PASS (existing + tests) |
-| Embed changed files into pgvector keyed by commit SHA | PASS (`AssembleReviewPackageUseCase` + `PgvectorStore.store_file_chunks`) |
-| Per-agent RAG top-5 retrieval | PASS (`review_graph` rag_retriever + `retrieve_similar`) |
-| Embedding cleanup on PR close | PASS (`PostgresEmbeddingCleanupRepository` in worker) |
+| tree-sitter chunking at function/class boundaries | PASS |
+| Embed changed files into pgvector keyed by commit SHA | PASS |
+| Per-agent RAG top-5 retrieval | PASS |
+| Embedding cleanup on PR close | PASS |
 | 1-hop import graph | PARTIAL — relative/local Python imports; not full module resolution |
 | Integration proof SQL | Manual: `SELECT COUNT(*) FROM code_embeddings` after next PR review |
 
@@ -99,9 +100,8 @@ None.
 
 ## Next Immediate Action
 
-1. User review F-03 + F-06 changes (uncommitted)
-2. Run next PR review → confirm `code_embeddings` rows in Neon SQL Editor
-3. Re-wake worker to drain remaining Redis PEL entries (3 pending as of last check)
+Production validation: install GitHub App on a real repo, trigger a PR review, confirm
+GitHub comments + dashboard + `make eval` baseline run.
 
 ---
 

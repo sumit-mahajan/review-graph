@@ -1,4 +1,5 @@
 """Tests for SupervisorAgent — routing decisions."""
+
 from unittest.mock import AsyncMock, MagicMock
 
 import pytest
@@ -30,9 +31,7 @@ async def test_supervisor_sets_active_agents() -> None:
 @pytest.mark.asyncio
 async def test_supervisor_falls_back_to_all_agents_on_empty_list() -> None:
     gemini = MagicMock()
-    gemini.generate = AsyncMock(
-        return_value=SupervisorOutput(agents=[], rationale="unclear")
-    )
+    gemini.generate = AsyncMock(return_value=SupervisorOutput(agents=[], rationale="unclear"))
 
     agent = SupervisorAgent(gemini)
     result = await agent.run(make_state())

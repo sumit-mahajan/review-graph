@@ -1,0 +1,56 @@
+{
+  "id": "perf_03",
+  "category": "perf",
+  "title": "Add bulk push notification dispatch and feed deduplication",
+  "author": "eval-bot",
+  "base_sha": "0000000000000000000000000000000000000000",
+  "head_sha": "1111111111111111111111111111111111111111",
+  "base_branch": "main",
+  "head_branch": "feature",
+  "changed_files": [
+    {
+      "path": "api/notifications.py",
+      "status": "modified",
+      "additions": 11,
+      "deletions": 12
+    }
+  ],
+  "context_units": [
+    {
+      "file_path": "api/notifications.py",
+      "node_type": "module",
+      "node_name": "notifications",
+      "start_line": 1,
+      "end_line": 24,
+      "body_old": "import httpx\n\n\nasync def send_bulk_notifications(user_ids: list[int], message: str) -> list[dict]:\n    async with httpx.AsyncClient() as client:\n        results = []\n        for uid in user_ids:\n            resp = await client.post(\n                \"https://push.example.com/notify\",\n                json={\"user_id\": uid, \"message\": message},\n                timeout=10,\n            )\n            results.append({\"user_id\": uid, \"status\": resp.status_code})\n    return results\n\n\nasync def process_feed_items(items: list[dict]) -> dict[int, dict]:\n    seen_ids: set[int] = set()\n    output: dict[int, dict] = {}\n    for item in items:\n        if item[\"id\"] in seen_ids:\n            continue\n        seen_ids.add(item[\"id\"])\n        output[item[\"id\"]] = item\n    return output\n",
+      "body_new": "import requests\n\n\nasync def send_bulk_notifications(user_ids: list[int], message: str) -> list[dict]:\n    results = []\n    for uid in user_ids:\n        resp = requests.post(\n            \"https://push.example.com/notify\",\n            json={\"user_id\": uid, \"message\": message},\n            timeout=10,\n        )\n        results.append({\"user_id\": uid, \"status\": resp.status_code})\n    return results\n\n\nasync def process_feed_items(items: list[dict]) -> dict[int, dict]:\n    seen_ids: list[int] = []\n    output: dict[int, dict] = {}\n    for item in items:\n        if item[\"id\"] in seen_ids:\n            continue\n        seen_ids.append(item[\"id\"])\n        output[item[\"id\"]] = item\n    return output\n",
+      "diff_patch": "--- a/api/notifications.py\n+++ b/api/notifications.py\n@@ -1,25 +1,24 @@\n-import httpx\n+import requests\n \n \n async def send_bulk_notifications(user_ids: list[int], message: str) -> list[dict]:\n-    async with httpx.AsyncClient() as client:\n-        results = []\n-        for uid in user_ids:\n-            resp = await client.post(\n-                \"https://push.example.com/notify\",\n-                json={\"user_id\": uid, \"message\": message},\n-                timeout=10,\n-            )\n-            results.append({\"user_id\": uid, \"status\": resp.status_code})\n+    results = []\n+    for uid in user_ids:\n+        resp = requests.post(\n+            \"https://push.example.com/notify\",\n+            json={\"user_id\": uid, \"message\": message},\n+            timeout=10,\n+        )\n+        results.append({\"user_id\": uid, \"status\": resp.status_code})\n     return results\n \n \n async def process_feed_items(items: list[dict]) -> dict[int, dict]:\n-    seen_ids: set[int] = set()\n+    seen_ids: list[int] = []\n     output: dict[int, dict] = {}\n     for item in items:\n         if item[\"id\"] in seen_ids:\n             continue\n-        seen_ids.add(item[\"id\"])\n+        seen_ids.append(item[\"id\"])\n         output[item[\"id\"]] = item\n     return output\n",
+      "language": "python"
+    }
+  ],
+  "raw_diff_chunks": [
+    {
+      "file_path": "api/notifications.py",
+      "patch": "--- a/api/notifications.py\n+++ b/api/notifications.py\n@@ -1,25 +1,24 @@\n-import httpx\n+import requests\n \n \n async def send_bulk_notifications(user_ids: list[int], message: str) -> list[dict]:\n-    async with httpx.AsyncClient() as client:\n-        results = []\n-        for uid in user_ids:\n-            resp = await client.post(\n-                \"https://push.example.com/notify\",\n-                json={\"user_id\": uid, \"message\": message},\n-                timeout=10,\n-            )\n-            results.append({\"user_id\": uid, \"status\": resp.status_code})\n+    results = []\n+    for uid in user_ids:\n+        resp = requests.post(\n+            \"https://push.example.com/notify\",\n+            json={\"user_id\": uid, \"message\": message},\n+            timeout=10,\n+        )\n+        results.append({\"user_id\": uid, \"status\": resp.status_code})\n     return results\n \n \n async def process_feed_items(items: list[dict]) -> dict[int, dict]:\n-    seen_ids: set[int] = set()\n+    seen_ids: list[int] = []\n     output: dict[int, dict] = {}\n     for item in items:\n         if item[\"id\"] in seen_ids:\n             continue\n-        seen_ids.add(item[\"id\"])\n+        seen_ids.append(item[\"id\"])\n         output[item[\"id\"]] = item\n     return output\n",
+      "language": "python"
+    }
+  ],
+  "expected_findings": [
+    {
+      "category": "perf",
+      "file_path": "api/notifications.py",
+      "line_start": 7,
+      "line_end": 7,
+      "title": "Blocking synchronous HTTP call inside an async function",
+      "rationale": "requests.post is synchronous and blocks the event loop for the entire duration of each network call. In an async context this eliminates concurrency. Use httpx.AsyncClient or aiohttp with await instead."
+    },
+    {
+      "category": "perf",
+      "file_path": "api/notifications.py",
+      "line_start": 17,
+      "line_end": 17,
+      "title": "O(n²) deduplication — list used instead of set for seen-ID tracking",
+      "rationale": "seen_ids is a list, so 'item[\"id\"] in seen_ids' is O(n) per iteration and O(n²) overall. The previous version correctly used a set, giving O(1) membership checks."
+    }
+  ]
+}

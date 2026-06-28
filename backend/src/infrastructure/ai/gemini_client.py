@@ -7,6 +7,7 @@ Handles:
   - Rate limit backoff: 429 → retry 2s / 8s / 32s (max 3 attempts)
   - Structured logging of token usage per call
 """
+
 from __future__ import annotations
 
 import asyncio
@@ -31,8 +32,17 @@ _STRIP_FIELDS = {"title", "$schema", "default", "additionalProperties"}
 
 # Keys that appear only in schema nodes (not in properties/field-name mappings).
 _SCHEMA_KEYWORDS = {
-    "type", "properties", "required", "items",
-    "anyOf", "oneOf", "allOf", "enum", "$ref", "format", "nullable",
+    "type",
+    "properties",
+    "required",
+    "items",
+    "anyOf",
+    "oneOf",
+    "allOf",
+    "enum",
+    "$ref",
+    "format",
+    "nullable",
 }
 
 
@@ -40,7 +50,7 @@ def _gemini_schema(schema: type[BaseModel]) -> dict[str, Any]:
     """Convert a Pydantic model to a Gemini-compatible JSON schema."""
     raw = schema.model_json_schema()
     defs: dict[str, Any] = raw.pop("$defs", {})
-    return _clean_node(raw, defs)  # type: ignore[return-value]
+    return _clean_node(raw, defs)  # type: ignore[no-any-return]
 
 
 def _clean_node(node: Any, defs: dict[str, Any]) -> Any:
@@ -188,5 +198,5 @@ def _log_usage(response: Any, schema_name: str) -> None:
                     output_tokens=getattr(usage, "candidates_token_count", 0),
                 )
             )
-    except Exception:  # noqa: BLE001
-        pass
+    except Exception as exc:  # noqa: BLE001
+        logger.debug("gemini_usage_log_failed", schema=schema_name, error=str(exc))

@@ -1,0 +1,39 @@
+{
+  "id": "clean_02",
+  "category": "clean",
+  "title": "Refactor in-memory cache manager to support per-entry TTL",
+  "author": "eval-bot",
+  "base_sha": "0000000000000000000000000000000000000000",
+  "head_sha": "1111111111111111111111111111111111111111",
+  "base_branch": "main",
+  "head_branch": "feature",
+  "changed_files": [
+    {
+      "path": "lib/cache/manager.py",
+      "status": "modified",
+      "additions": 18,
+      "deletions": 4
+    }
+  ],
+  "context_units": [
+    {
+      "file_path": "lib/cache/manager.py",
+      "node_type": "module",
+      "node_name": "manager",
+      "start_line": 1,
+      "end_line": 30,
+      "body_old": "import time\nfrom typing import Any, Optional\n\n\nclass CacheManager:\n    def __init__(self) -> None:\n        self._store: dict[str, Any] = {}\n\n    def get(self, key: str) -> Optional[Any]:\n        return self._store.get(key)\n\n    def set(self, key: str, value: Any) -> None:\n        self._store[key] = value\n\n    def delete(self, key: str) -> None:\n        self._store.pop(key, None)\n",
+      "body_new": "import time\nfrom dataclasses import dataclass\nfrom typing import Any, Optional\n\n\n@dataclass\nclass _Entry:\n    value: Any\n    expires_at: Optional[float]\n\n\nclass CacheManager:\n    def __init__(self) -> None:\n        self._store: dict[str, _Entry] = {}\n\n    def get(self, key: str) -> Optional[Any]:\n        entry = self._store.get(key)\n        if entry is None:\n            return None\n        if entry.expires_at is not None and time.monotonic() > entry.expires_at:\n            del self._store[key]\n            return None\n        return entry.value\n\n    def set(self, key: str, value: Any, ttl: Optional[float] = None) -> None:\n        expires_at = time.monotonic() + ttl if ttl is not None else None\n        self._store[key] = _Entry(value=value, expires_at=expires_at)\n\n    def delete(self, key: str) -> None:\n        self._store.pop(key, None)\n",
+      "diff_patch": "--- a/lib/cache/manager.py\n+++ b/lib/cache/manager.py\n@@ -1,16 +1,30 @@\n import time\n+from dataclasses import dataclass\n from typing import Any, Optional\n+\n+\n+@dataclass\n+class _Entry:\n+    value: Any\n+    expires_at: Optional[float]\n \n \n class CacheManager:\n     def __init__(self) -> None:\n-        self._store: dict[str, Any] = {}\n+        self._store: dict[str, _Entry] = {}\n \n     def get(self, key: str) -> Optional[Any]:\n-        return self._store.get(key)\n+        entry = self._store.get(key)\n+        if entry is None:\n+            return None\n+        if entry.expires_at is not None and time.monotonic() > entry.expires_at:\n+            del self._store[key]\n+            return None\n+        return entry.value\n \n-    def set(self, key: str, value: Any) -> None:\n-        self._store[key] = value\n+    def set(self, key: str, value: Any, ttl: Optional[float] = None) -> None:\n+        expires_at = time.monotonic() + ttl if ttl is not None else None\n+        self._store[key] = _Entry(value=value, expires_at=expires_at)\n \n     def delete(self, key: str) -> None:\n         self._store.pop(key, None)\n",
+      "language": "python"
+    }
+  ],
+  "raw_diff_chunks": [
+    {
+      "file_path": "lib/cache/manager.py",
+      "patch": "--- a/lib/cache/manager.py\n+++ b/lib/cache/manager.py\n@@ -1,16 +1,30 @@\n import time\n+from dataclasses import dataclass\n from typing import Any, Optional\n+\n+\n+@dataclass\n+class _Entry:\n+    value: Any\n+    expires_at: Optional[float]\n \n \n class CacheManager:\n     def __init__(self) -> None:\n-        self._store: dict[str, Any] = {}\n+        self._store: dict[str, _Entry] = {}\n \n     def get(self, key: str) -> Optional[Any]:\n-        return self._store.get(key)\n+        entry = self._store.get(key)\n+        if entry is None:\n+            return None\n+        if entry.expires_at is not None and time.monotonic() > entry.expires_at:\n+            del self._store[key]\n+            return None\n+        return entry.value\n \n-    def set(self, key: str, value: Any) -> None:\n-        self._store[key] = value\n+    def set(self, key: str, value: Any, ttl: Optional[float] = None) -> None:\n+        expires_at = time.monotonic() + ttl if ttl is not None else None\n+        self._store[key] = _Entry(value=value, expires_at=expires_at)\n \n     def delete(self, key: str) -> None:\n         self._store.pop(key, None)\n",
+      "language": "python"
+    }
+  ],
+  "expected_findings": []
+}

@@ -1,4 +1,5 @@
 """F-03 acceptance tests — embedding index + per-agent RAG retrieval."""
+
 from datetime import UTC, datetime
 from unittest.mock import AsyncMock
 from uuid import UUID, uuid4

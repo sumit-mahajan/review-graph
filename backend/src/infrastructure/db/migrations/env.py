@@ -11,6 +11,7 @@ from sqlalchemy.ext.asyncio import create_async_engine
 from infrastructure.db.database_url import normalize_async_database_url
 from infrastructure.db.models.base import Base
 from infrastructure.db.models.code_embedding import CodeEmbeddingORM  # noqa: F401
+from infrastructure.db.models.eval_run import EvalResultORM, EvalRunORM  # noqa: F401
 from infrastructure.db.models.finding import FindingORM  # noqa: F401
 from infrastructure.db.models.installation import GithubInstallationORM  # noqa: F401
 from infrastructure.db.models.repository import RepositoryORM  # noqa: F401
@@ -45,9 +46,7 @@ def _load_database_url() -> str:
 
 _raw_database_url = _load_database_url()
 if not _raw_database_url:
-    msg = (
-        "DATABASE_URL is not set. Add it to the repo root .env or export it in your shell."
-    )
+    msg = "DATABASE_URL is not set. Add it to the repo root .env or export it in your shell."
     raise RuntimeError(msg)
 
 database_url, database_connect_args = normalize_async_database_url(_raw_database_url)

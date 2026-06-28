@@ -1,0 +1,59 @@
+{
+  "id": "py_sec_03",
+  "category": "security",
+  "title": "Add log archiving and diagnostics utilities",
+  "author": "eval-bot",
+  "base_sha": "0000000000000000000000000000000000000000",
+  "head_sha": "1111111111111111111111111111111111111111",
+  "base_branch": "main",
+  "head_branch": "feature/diagnostics",
+  "changed_files": [
+    { "path": "app/ops.py", "status": "added", "additions": 16, "deletions": 0 }
+  ],
+  "context_units": [
+    {
+      "file_path": "app/ops.py",
+      "node_type": "module",
+      "node_name": "ops",
+      "start_line": 1,
+      "end_line": 16,
+      "body_old": "",
+      "body_new": "import os\nimport subprocess\n\n\ndef archive_logs(filename):\n    os.system(\"tar -czf /backups/\" + filename + \".tar.gz /var/log\")\n\n\ndef read_report(report_name):\n    path = \"/reports/\" + report_name\n    with open(path) as handle:\n        return handle.read()\n\n\ndef ping(host):\n    return subprocess.check_output(\"ping -c 1 \" + host, shell=True)\n",
+      "diff_patch": "@@ -0,0 +1,16 @@\n+import os\n+import subprocess\n+\n+\n+def archive_logs(filename):\n+    os.system(\"tar -czf /backups/\" + filename + \".tar.gz /var/log\")\n+\n+\n+def read_report(report_name):\n+    path = \"/reports/\" + report_name\n+    with open(path) as handle:\n+        return handle.read()\n+\n+\n+def ping(host):\n+    return subprocess.check_output(\"ping -c 1 \" + host, shell=True)",
+      "language": "python"
+    }
+  ],
+  "raw_diff_chunks": [
+    {
+      "file_path": "app/ops.py",
+      "patch": "@@ -0,0 +1,16 @@\n+import os\n+import subprocess\n+\n+\n+def archive_logs(filename):\n+    os.system(\"tar -czf /backups/\" + filename + \".tar.gz /var/log\")\n+\n+\n+def read_report(report_name):\n+    path = \"/reports/\" + report_name\n+    with open(path) as handle:\n+        return handle.read()\n+\n+\n+def ping(host):\n+    return subprocess.check_output(\"ping -c 1 \" + host, shell=True)",
+      "language": "python"
+    }
+  ],
+  "expected_findings": [
+    {
+      "category": "security",
+      "file_path": "app/ops.py",
+      "line_start": 6,
+      "line_end": 6,
+      "title": "Command injection via os.system with concatenated input",
+      "rationale": "filename is concatenated into a shell command run by os.system, allowing arbitrary command injection."
+    },
+    {
+      "category": "security",
+      "file_path": "app/ops.py",
+      "line_start": 10,
+      "line_end": 11,
+      "title": "Path traversal in report file access",
+      "rationale": "report_name is appended to a path with no sanitization, allowing ../ traversal to read arbitrary files."
+    },
+    {
+      "category": "security",
+      "file_path": "app/ops.py",
+      "line_start": 16,
+      "line_end": 16,
+      "title": "Command injection via subprocess shell=True",
+      "rationale": "host is concatenated into a shell command executed with shell=True, allowing command injection; use an argument list without a shell."
+    }
+  ]
+}

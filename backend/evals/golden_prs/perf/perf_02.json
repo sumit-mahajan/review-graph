@@ -1,0 +1,56 @@
+{
+  "id": "perf_02",
+  "category": "perf",
+  "title": "Add record deduplication and common-tag intersection utilities",
+  "author": "eval-bot",
+  "base_sha": "0000000000000000000000000000000000000000",
+  "head_sha": "1111111111111111111111111111111111111111",
+  "base_branch": "main",
+  "head_branch": "feature",
+  "changed_files": [
+    {
+      "path": "lib/processing/deduplicator.py",
+      "status": "added",
+      "additions": 24,
+      "deletions": 0
+    }
+  ],
+  "context_units": [
+    {
+      "file_path": "lib/processing/deduplicator.py",
+      "node_type": "module",
+      "node_name": "deduplicator",
+      "start_line": 1,
+      "end_line": 24,
+      "body_old": "",
+      "body_new": "from typing import Any\n\n\ndef deduplicate_records(records: list[dict]) -> list[dict]:\n    \"\"\"Return records with duplicates removed, preserving first-seen order.\"\"\"\n    unique: list[dict] = []\n    for record in records:\n        if record not in unique:\n            unique.append(record)\n    return unique\n\n\ndef common_tags(posts: list[dict]) -> list[str]:\n    \"\"\"Return tags present in every post, sorted alphabetically.\"\"\"\n    if not posts:\n        return []\n    shared = set(posts[0].get(\"tags\", []))\n    for post in posts[1:]:\n        shared &= set(post.get(\"tags\", []))\n    result: list[str] = []\n    for tag in sorted(shared):\n        if tag not in result:\n            result.append(tag)\n    return result\n",
+      "diff_patch": "@@ -0,0 +1,24 @@\n+from typing import Any\n+\n+\n+def deduplicate_records(records: list[dict]) -> list[dict]:\n+    \"\"\"Return records with duplicates removed, preserving first-seen order.\"\"\"\n+    unique: list[dict] = []\n+    for record in records:\n+        if record not in unique:\n+            unique.append(record)\n+    return unique\n+\n+\n+def common_tags(posts: list[dict]) -> list[str]:\n+    \"\"\"Return tags present in every post, sorted alphabetically.\"\"\"\n+    if not posts:\n+        return []\n+    shared = set(posts[0].get(\"tags\", []))\n+    for post in posts[1:]:\n+        shared &= set(post.get(\"tags\", []))\n+    result: list[str] = []\n+    for tag in sorted(shared):\n+        if tag not in result:\n+            result.append(tag)\n+    return result\n",
+      "language": "python"
+    }
+  ],
+  "raw_diff_chunks": [
+    {
+      "file_path": "lib/processing/deduplicator.py",
+      "patch": "@@ -0,0 +1,24 @@\n+from typing import Any\n+\n+\n+def deduplicate_records(records: list[dict]) -> list[dict]:\n+    \"\"\"Return records with duplicates removed, preserving first-seen order.\"\"\"\n+    unique: list[dict] = []\n+    for record in records:\n+        if record not in unique:\n+            unique.append(record)\n+    return unique\n+\n+\n+def common_tags(posts: list[dict]) -> list[str]:\n+    \"\"\"Return tags present in every post, sorted alphabetically.\"\"\"\n+    if not posts:\n+        return []\n+    shared = set(posts[0].get(\"tags\", []))\n+    for post in posts[1:]:\n+        shared &= set(post.get(\"tags\", []))\n+    result: list[str] = []\n+    for tag in sorted(shared):\n+        if tag not in result:\n+            result.append(tag)\n+    return result\n",
+      "language": "python"
+    }
+  ],
+  "expected_findings": [
+    {
+      "category": "perf",
+      "file_path": "lib/processing/deduplicator.py",
+      "line_start": 8,
+      "line_end": 8,
+      "title": "O(n²) duplicate check using list membership instead of a set",
+      "rationale": "Each loop iteration scans the entire unique list to test membership, giving O(n) per check and O(n²) total. A set (or dict keyed by a hashable representation) reduces this to O(n)."
+    },
+    {
+      "category": "perf",
+      "file_path": "lib/processing/deduplicator.py",
+      "line_start": 22,
+      "line_end": 22,
+      "title": "Redundant O(n²) list scan after a set intersection already guarantees uniqueness",
+      "rationale": "After the set intersection, iterating sorted(shared) yields unique elements by construction. The 'if tag not in result' membership test is always True yet performs O(n²) comparisons; the correct code is simply 'return sorted(shared)'."
+    }
+  ]
+}

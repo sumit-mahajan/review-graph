@@ -1,0 +1,78 @@
+{
+  "id": "test_03",
+  "category": "test",
+  "title": "Add stock reservation tracking and release capability",
+  "author": "eval-bot",
+  "base_sha": "0000000000000000000000000000000000000000",
+  "head_sha": "1111111111111111111111111111111111111111",
+  "base_branch": "main",
+  "head_branch": "feature",
+  "changed_files": [
+    {
+      "path": "app/inventory/stock.py",
+      "status": "modified",
+      "additions": 8,
+      "deletions": 0
+    },
+    {
+      "path": "tests/test_stock.py",
+      "status": "modified",
+      "additions": 3,
+      "deletions": 3
+    }
+  ],
+  "context_units": [
+    {
+      "file_path": "app/inventory/stock.py",
+      "node_type": "module",
+      "node_name": "stock",
+      "start_line": 1,
+      "end_line": 21,
+      "body_old": "class StockManager:\n    def __init__(self) -> None:\n        self._stock: dict[str, int] = {}\n\n    def add_stock(self, sku: str, qty: int) -> None:\n        self._stock[sku] = self._stock.get(sku, 0) + qty\n\n    def reserve(self, sku: str, qty: int) -> bool:\n        available = self._stock.get(sku, 0)\n        if available < qty:\n            return False\n        self._stock[sku] = available - qty\n        return True\n",
+      "body_new": "class StockManager:\n    def __init__(self) -> None:\n        self._stock: dict[str, int] = {}\n        self._reservations: dict[str, int] = {}\n\n    def add_stock(self, sku: str, qty: int) -> None:\n        self._stock[sku] = self._stock.get(sku, 0) + qty\n\n    def reserve(self, sku: str, qty: int) -> bool:\n        available = self._stock.get(sku, 0)\n        if available < qty:\n            return False\n        self._stock[sku] = available - qty\n        self._reservations[sku] = self._reservations.get(sku, 0) + qty\n        return True\n\n    def release_reservation(self, sku: str, qty: int) -> None:\n        reserved = self._reservations.get(sku, 0)\n        released = min(reserved, qty)\n        self._reservations[sku] = reserved - released\n        self._stock[sku] = self._stock.get(sku, 0) + released\n",
+      "diff_patch": "--- a/app/inventory/stock.py\n+++ b/app/inventory/stock.py\n@@ -1,6 +1,7 @@\n class StockManager:\n     def __init__(self) -> None:\n         self._stock: dict[str, int] = {}\n+        self._reservations: dict[str, int] = {}\n \n     def add_stock(self, sku: str, qty: int) -> None:\n         self._stock[sku] = self._stock.get(sku, 0) + qty\n@@ -10,4 +11,11 @@\n         if available < qty:\n             return False\n         self._stock[sku] = available - qty\n+        self._reservations[sku] = self._reservations.get(sku, 0) + qty\n         return True\n+\n+    def release_reservation(self, sku: str, qty: int) -> None:\n+        reserved = self._reservations.get(sku, 0)\n+        released = min(reserved, qty)\n+        self._reservations[sku] = reserved - released\n+        self._stock[sku] = self._stock.get(sku, 0) + released\n",
+      "language": "python"
+    },
+    {
+      "file_path": "tests/test_stock.py",
+      "node_type": "module",
+      "node_name": "test_stock",
+      "start_line": 1,
+      "end_line": 23,
+      "body_old": "import pytest\nfrom app.inventory.stock import StockManager\n\n\ndef test_reserve_success():\n    mgr = StockManager()\n    mgr.add_stock(\"SKU-A\", 10)\n    assert mgr.reserve(\"SKU-A\", 3) is True\n    assert mgr.reserve(\"SKU-A\", 8) is False\n\n\ndef test_reserve_insufficient():\n    mgr = StockManager()\n    mgr.add_stock(\"SKU-B\", 2)\n    reserved = mgr.reserve(\"SKU-B\", 5)\n    assert reserved is False\n\n\ndef test_reserve_exact():\n    mgr = StockManager()\n    mgr.add_stock(\"SKU-C\", 5)\n    assert mgr.reserve(\"SKU-C\", 5) is True\n    assert mgr.reserve(\"SKU-C\", 1) is False\n",
+      "body_new": "import pytest\nfrom app.inventory.stock import StockManager\n\n\ndef test_reserve_success():\n    mgr = StockManager()\n    mgr.add_stock(\"SKU-A\", 10)\n    assert mgr.reserve(\"SKU-A\", 3) is True\n    assert mgr.reserve(\"SKU-A\", 8) is False\n\n\ndef test_reserve_insufficient():\n    mgr = StockManager()\n    mgr.add_stock(\"SKU-B\", 2)\n    reserved = mgr.reserve(\"SKU-B\", 5)\n    assert reserved is False\n\n\ndef test_release_reservation():\n    mgr = StockManager()\n    mgr.add_stock(\"SKU-C\", 5)\n    mgr.reserve(\"SKU-C\", 5)\n    mgr.release_reservation(\"SKU-C\", 3)\n",
+      "diff_patch": "--- a/tests/test_stock.py\n+++ b/tests/test_stock.py\n@@ -16,8 +16,8 @@\n     assert reserved is False\n \n \n-def test_reserve_exact():\n+def test_release_reservation():\n     mgr = StockManager()\n     mgr.add_stock(\"SKU-C\", 5)\n-    assert mgr.reserve(\"SKU-C\", 5) is True\n-    assert mgr.reserve(\"SKU-C\", 1) is False\n+    mgr.reserve(\"SKU-C\", 5)\n+    mgr.release_reservation(\"SKU-C\", 3)\n",
+      "language": "python"
+    }
+  ],
+  "raw_diff_chunks": [
+    {
+      "file_path": "app/inventory/stock.py",
+      "patch": "--- a/app/inventory/stock.py\n+++ b/app/inventory/stock.py\n@@ -1,6 +1,7 @@\n class StockManager:\n     def __init__(self) -> None:\n         self._stock: dict[str, int] = {}\n+        self._reservations: dict[str, int] = {}\n \n     def add_stock(self, sku: str, qty: int) -> None:\n         self._stock[sku] = self._stock.get(sku, 0) + qty\n@@ -10,4 +11,11 @@\n         if available < qty:\n             return False\n         self._stock[sku] = available - qty\n+        self._reservations[sku] = self._reservations.get(sku, 0) + qty\n         return True\n+\n+    def release_reservation(self, sku: str, qty: int) -> None:\n+        reserved = self._reservations.get(sku, 0)\n+        released = min(reserved, qty)\n+        self._reservations[sku] = reserved - released\n+        self._stock[sku] = self._stock.get(sku, 0) + released\n",
+      "language": "python"
+    },
+    {
+      "file_path": "tests/test_stock.py",
+      "patch": "--- a/tests/test_stock.py\n+++ b/tests/test_stock.py\n@@ -16,8 +16,8 @@\n     assert reserved is False\n \n \n-def test_reserve_exact():\n+def test_release_reservation():\n     mgr = StockManager()\n     mgr.add_stock(\"SKU-C\", 5)\n-    assert mgr.reserve(\"SKU-C\", 5) is True\n-    assert mgr.reserve(\"SKU-C\", 1) is False\n+    mgr.reserve(\"SKU-C\", 5)\n+    mgr.release_reservation(\"SKU-C\", 3)\n",
+      "language": "python"
+    }
+  ],
+  "expected_findings": [
+    {
+      "category": "test",
+      "file_path": "app/inventory/stock.py",
+      "line_start": 17,
+      "line_end": 17,
+      "title": "New public method release_reservation has no test coverage",
+      "rationale": "release_reservation introduces a min() branch and mutates two internal dicts, but no test exercises it. Releasing more than reserved, releasing an unknown SKU, and releasing exactly the reserved quantity are all uncovered."
+    },
+    {
+      "category": "test",
+      "file_path": "tests/test_stock.py",
+      "line_start": 23,
+      "line_end": 23,
+      "title": "Test calls release_reservation but contains no assertion",
+      "rationale": "test_release_reservation invokes the method but never asserts the resulting stock or reservation counts. The test will pass even if release_reservation corrupts internal state or silently does nothing."
+    }
+  ]
+}

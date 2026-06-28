@@ -24,7 +24,7 @@ class UserService:
         return user
 '''
 
-TYPESCRIPT_SOURCE = '''\
+TYPESCRIPT_SOURCE = """\
 async function fetchUser(userId: string): Promise<User | null> {
   const user = await db.users.findUnique({ where: { id: userId } });
   return user;
@@ -39,7 +39,7 @@ class AuthService {
     return generateToken(user.id);
   }
 }
-'''
+"""
 
 PYTHON_PATCH = """\
 @@ -1,6 +1,6 @@

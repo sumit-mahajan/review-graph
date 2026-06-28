@@ -1,4 +1,5 @@
 """Tests for worker queue drain helpers."""
+
 import json
 
 from worker.drain import _stream_payload

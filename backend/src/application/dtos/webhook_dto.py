@@ -1,8 +1,8 @@
 from dataclasses import dataclass
-from enum import Enum
+from enum import StrEnum
 
 
-class WebhookEventType(str, Enum):
+class WebhookEventType(StrEnum):
     PULL_REQUEST = "pull_request"
     INSTALLATION = "installation"
     INSTALLATION_REPOSITORIES = "installation_repositories"
@@ -10,7 +10,7 @@ class WebhookEventType(str, Enum):
     OTHER = "other"
 
 
-class PullRequestAction(str, Enum):
+class PullRequestAction(StrEnum):
     OPENED = "opened"
     SYNCHRONIZE = "synchronize"
     REOPENED = "reopened"

@@ -1,0 +1,43 @@
+{
+  "id": "py_test_03",
+  "category": "test",
+  "title": "Simplify auth tests",
+  "author": "eval-bot",
+  "base_sha": "0000000000000000000000000000000000000000",
+  "head_sha": "1111111111111111111111111111111111111111",
+  "base_branch": "main",
+  "head_branch": "feature/trim-auth-tests",
+  "changed_files": [
+    { "path": "tests/test_auth.py", "status": "modified", "additions": 0, "deletions": 8 }
+  ],
+  "context_units": [
+    {
+      "file_path": "tests/test_auth.py",
+      "node_type": "module",
+      "node_name": "test_auth",
+      "start_line": 1,
+      "end_line": 5,
+      "body_old": "from auth import verify_token\n\n\ndef test_verify_token_valid():\n    assert verify_token(\"good\") == {\"user\": \"alice\"}\n\n\ndef test_verify_token_expired():\n    assert verify_token(\"expired\") is None\n\n\ndef test_verify_token_tampered():\n    assert verify_token(\"tampered\") is None\n",
+      "body_new": "from auth import verify_token\n\n\ndef test_verify_token_valid():\n    assert verify_token(\"good\") == {\"user\": \"alice\"}\n",
+      "diff_patch": "@@ -1,13 +1,5 @@\n from auth import verify_token\n \n \n def test_verify_token_valid():\n     assert verify_token(\"good\") == {\"user\": \"alice\"}\n-\n-\n-def test_verify_token_expired():\n-    assert verify_token(\"expired\") is None\n-\n-\n-def test_verify_token_tampered():\n-    assert verify_token(\"tampered\") is None",
+      "language": "python"
+    }
+  ],
+  "raw_diff_chunks": [
+    {
+      "file_path": "tests/test_auth.py",
+      "patch": "@@ -1,13 +1,5 @@\n from auth import verify_token\n \n \n def test_verify_token_valid():\n     assert verify_token(\"good\") == {\"user\": \"alice\"}\n-\n-\n-def test_verify_token_expired():\n-    assert verify_token(\"expired\") is None\n-\n-\n-def test_verify_token_tampered():\n-    assert verify_token(\"tampered\") is None",
+      "language": "python"
+    }
+  ],
+  "expected_findings": [
+    {
+      "category": "test",
+      "file_path": "tests/test_auth.py",
+      "line_start": 4,
+      "line_end": 5,
+      "title": "Removed edge-case tests regress coverage",
+      "rationale": "The expired-token and tampered-token tests were deleted, removing coverage of security-relevant branches and leaving only the happy path tested."
+    }
+  ]
+}

@@ -6,6 +6,7 @@ All log entries are JSON objects with fixed fields:
 
 Call configure_logging() once at app startup.
 """
+
 import logging
 import sys
 

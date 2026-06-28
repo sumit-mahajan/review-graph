@@ -1,5 +1,5 @@
-from domain.entities.github_installation import GithubInstallation
 from domain.entities.embedding_cleanup_job import EmbeddingCleanupJob
+from domain.entities.github_installation import GithubInstallation
 from domain.entities.job import ReviewJob
 from domain.entities.repository import Repository
 from domain.value_objects.job_status import JobStatus

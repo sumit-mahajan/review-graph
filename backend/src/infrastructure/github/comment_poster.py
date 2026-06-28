@@ -1,7 +1,10 @@
 """
 GithubCommentPoster — posts PR reviews and inline comments via the GitHub REST API.
 """
+
 from __future__ import annotations
+
+from typing import TYPE_CHECKING
 
 import httpx
 import structlog
@@ -12,7 +15,9 @@ from domain.services.i_github_comment_poster import (
     PostedReviewResult,
     ReviewComment,
 )
-from infrastructure.github.app_client import GithubAppClient
+
+if TYPE_CHECKING:
+    from infrastructure.github.app_client import GithubAppClient
 
 logger = structlog.get_logger()
 GITHUB_API = "https://api.github.com"
@@ -52,9 +57,7 @@ class GithubCommentPoster(IGithubCommentPoster):
         }
 
         if comments:
-            payload["comments"] = [
-                _to_github_comment(comment) for comment in comments
-            ]
+            payload["comments"] = [_to_github_comment(comment) for comment in comments]
 
         url = f"{GITHUB_API}/repos/{owner}/{repo}/pulls/{pr_number}/reviews"
         response = await self._http.post(url, headers=headers, json=payload)

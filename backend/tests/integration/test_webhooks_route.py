@@ -1,4 +1,5 @@
 """Integration tests for POST /api/v1/webhooks/github."""
+
 import hashlib
 import hmac
 from collections.abc import AsyncIterator

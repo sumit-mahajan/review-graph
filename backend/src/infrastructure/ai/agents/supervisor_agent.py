@@ -1,12 +1,16 @@
 from __future__ import annotations
 
+from typing import TYPE_CHECKING
+
 from pydantic import BaseModel
 
 from domain.value_objects.agent_type import AgentType
-from infrastructure.ai.gemini_client import GeminiClient
-from infrastructure.ai.graph.state import ReviewState
 from infrastructure.ai.prompts.supervisor import SUPERVISOR_SYSTEM, build_supervisor_prompt
 from infrastructure.observability.tracing import trace_agent
+
+if TYPE_CHECKING:
+    from infrastructure.ai.gemini_client import GeminiClient
+    from infrastructure.ai.graph.state import ReviewState
 
 
 class SupervisorOutput(BaseModel):
@@ -26,13 +30,11 @@ class SupervisorAgent:
         )
 
         valid = {a.value for a in AgentType}
-        active = [
-            AgentType(a) for a in output.agents if a in valid
-        ]
+        active = [AgentType(a) for a in output.agents if a in valid]
         if not active:
             active = list(AgentType)  # fallback: run all agents
         elif len(state["pr_metadata"].changed_files) > 0 and len(active) == 1:
             # Supervisor under-routed — run all agents when code files changed
             active = list(AgentType)
 
-        return {**state, "active_agents": active}  # type: ignore[return-value]
+        return {**state, "active_agents": active}

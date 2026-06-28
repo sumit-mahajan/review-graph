@@ -7,20 +7,24 @@ Flow:
 Specialist agents run sequentially in one node so findings accumulate reliably
 before synthesis (parallel fan-out caused synthesis to run with partial/empty state).
 """
+
 from __future__ import annotations
 
 from collections.abc import Awaitable, Callable
+from typing import TYPE_CHECKING
 
 from langgraph.graph import END, START, StateGraph
 
 from domain.value_objects.agent_type import AgentType
-from infrastructure.ai.agents.arch_agent import ArchAgent
-from infrastructure.ai.agents.perf_agent import PerfAgent
-from infrastructure.ai.agents.security_agent import SecurityAgent
-from infrastructure.ai.agents.supervisor_agent import SupervisorAgent
-from infrastructure.ai.agents.synthesis_agent import SynthesisAgent
-from infrastructure.ai.agents.test_agent import TestAgent
 from infrastructure.ai.graph.state import ReviewState
+
+if TYPE_CHECKING:
+    from infrastructure.ai.agents.arch_agent import ArchAgent
+    from infrastructure.ai.agents.perf_agent import PerfAgent
+    from infrastructure.ai.agents.security_agent import SecurityAgent
+    from infrastructure.ai.agents.supervisor_agent import SupervisorAgent
+    from infrastructure.ai.agents.synthesis_agent import SynthesisAgent
+    from infrastructure.ai.agents.test_agent import TestAgent
 
 AgentRunner = Callable[[ReviewState], Awaitable[ReviewState]]
 RagRetriever = Callable[[ReviewState, AgentType], Awaitable[list[str]]]
@@ -62,13 +66,13 @@ def build_review_graph(
     test: TestAgent,
     synthesis: SynthesisAgent,
     rag_retriever: RagRetriever | None = None,
-) -> StateGraph:
-    graph = StateGraph(ReviewState)
+) -> StateGraph[ReviewState]:
+    graph: StateGraph[ReviewState] = StateGraph(ReviewState)
 
     graph.add_node("supervisor", supervisor.run)
     graph.add_node(
         "specialists",
-        _make_specialists_runner(security, perf, arch, test, rag_retriever),
+        _make_specialists_runner(security, perf, arch, test, rag_retriever),  # type: ignore[arg-type]
     )
     graph.add_node("synthesis", synthesis.run)
 

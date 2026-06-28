@@ -3,11 +3,15 @@ EmbeddingService — wraps GeminiClient.embed for code chunk embedding.
 
 Returns 768-dimensional vectors via gemini-embedding-001 (Matryoshka-truncated).
 """
+
 from __future__ import annotations
+
+from typing import TYPE_CHECKING
 
 import structlog
 
-from infrastructure.ai.gemini_client import GeminiClient
+if TYPE_CHECKING:
+    from infrastructure.ai.gemini_client import GeminiClient
 
 logger = structlog.get_logger()
 

@@ -1,28 +1,12 @@
-from uuid import UUID
-
-from fastapi import APIRouter, Depends, Query
+from fastapi import APIRouter, Query
 from fastapi.responses import RedirectResponse
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from api.middleware.auth_middleware import CurrentUser, DbSession
+from api.middleware.auth_middleware import DbSession
 from api.schemas.dashboard import (
-    AgentConfigDTO,
     AuthTokenDTO,
-    JobStatusDTO,
-    PaginatedResponse,
-    RepoDTO,
-    ReviewDetailDTO,
-    UpdateAgentConfigRequest,
 )
-from application.use_cases.configure_repo import ConfigureRepoUseCase
-from application.use_cases.get_job import GetJobUseCase
 from application.use_cases.handle_github_auth import HandleGithubAuthUseCase
-from application.use_cases.list_repos import ListReposUseCase
-from application.use_cases.list_reviews import GetReviewUseCase, ListReviewsUseCase
-from infrastructure.db.repositories.agent_config_repository import PostgresAgentConfigRepository
-from infrastructure.db.repositories.job_repository import PostgresJobRepository
-from infrastructure.db.repositories.repo_repository import PostgresRepoRepository
-from infrastructure.db.repositories.review_repository import PostgresReviewRepository
 from infrastructure.db.repositories.user_repository import PostgresUserRepository
 
 router = APIRouter(prefix="/auth", tags=["auth"])

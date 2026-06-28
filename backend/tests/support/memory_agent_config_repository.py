@@ -1,4 +1,5 @@
 """In-memory agent config repository for unit tests."""
+
 from datetime import UTC, datetime
 from uuid import UUID, uuid4
 
@@ -36,9 +37,7 @@ class InMemoryAgentConfigRepository(IAgentConfigRepository):
         self._configs[repository_id] = config
         return config
 
-    async def update(
-        self, repository_id: UUID, params: UpdateAgentConfigParams
-    ) -> AgentConfig:
+    async def update(self, repository_id: UUID, params: UpdateAgentConfigParams) -> AgentConfig:
         config = self._configs.get(repository_id)
         if config is None:
             raise EntityNotFoundError(f"Agent config for repository {repository_id} not found")

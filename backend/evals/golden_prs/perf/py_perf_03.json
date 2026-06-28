@@ -1,0 +1,51 @@
+{
+  "id": "py_perf_03",
+  "category": "perf",
+  "title": "Add revenue total and user enrichment",
+  "author": "eval-bot",
+  "base_sha": "0000000000000000000000000000000000000000",
+  "head_sha": "1111111111111111111111111111111111111111",
+  "base_branch": "main",
+  "head_branch": "feature/revenue",
+  "changed_files": [
+    { "path": "app/finance.py", "status": "added", "additions": 17, "deletions": 0 }
+  ],
+  "context_units": [
+    {
+      "file_path": "app/finance.py",
+      "node_type": "module",
+      "node_name": "finance",
+      "start_line": 1,
+      "end_line": 17,
+      "body_old": "",
+      "body_new": "from models import Order\n\n\ndef total_revenue(session):\n    orders = session.query(Order).all()\n    total = 0\n    for order in orders:\n        total += order.amount\n    return total\n\n\ndef enrich(users, config_loader):\n    enriched = []\n    for user in users:\n        config = config_loader.load()\n        enriched.append((user, config.region))\n    return enriched\n",
+      "diff_patch": "@@ -0,0 +1,17 @@\n+from models import Order\n+\n+\n+def total_revenue(session):\n+    orders = session.query(Order).all()\n+    total = 0\n+    for order in orders:\n+        total += order.amount\n+    return total\n+\n+\n+def enrich(users, config_loader):\n+    enriched = []\n+    for user in users:\n+        config = config_loader.load()\n+        enriched.append((user, config.region))\n+    return enriched",
+      "language": "python"
+    }
+  ],
+  "raw_diff_chunks": [
+    {
+      "file_path": "app/finance.py",
+      "patch": "@@ -0,0 +1,17 @@\n+from models import Order\n+\n+\n+def total_revenue(session):\n+    orders = session.query(Order).all()\n+    total = 0\n+    for order in orders:\n+        total += order.amount\n+    return total\n+\n+\n+def enrich(users, config_loader):\n+    enriched = []\n+    for user in users:\n+        config = config_loader.load()\n+        enriched.append((user, config.region))\n+    return enriched",
+      "language": "python"
+    }
+  ],
+  "expected_findings": [
+    {
+      "category": "perf",
+      "file_path": "app/finance.py",
+      "line_start": 5,
+      "line_end": 8,
+      "title": "Full table load instead of DB aggregation",
+      "rationale": "All Order rows are loaded into memory to sum amounts; the database should compute SUM(amount) to avoid loading the whole table."
+    },
+    {
+      "category": "perf",
+      "file_path": "app/finance.py",
+      "line_start": 15,
+      "line_end": 15,
+      "title": "Repeated expensive load inside loop",
+      "rationale": "config_loader.load() is invoked on every iteration although the result is invariant; it should be hoisted out of the loop."
+    }
+  ]
+}

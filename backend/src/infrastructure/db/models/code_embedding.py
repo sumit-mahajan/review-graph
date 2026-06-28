@@ -11,7 +11,10 @@ class CodeEmbeddingORM(Base, TimestampMixin):
     __tablename__ = "code_embeddings"
     __table_args__ = (
         UniqueConstraint(
-            "repository_id", "commit_sha", "file_path", "chunk_index",
+            "repository_id",
+            "commit_sha",
+            "file_path",
+            "chunk_index",
             name="uq_code_embeddings_repo_sha_file_chunk",
         ),
     )
@@ -26,6 +29,7 @@ class CodeEmbeddingORM(Base, TimestampMixin):
     file_path: Mapped[str] = mapped_column(String(512), nullable=False)
     chunk_index: Mapped[int] = mapped_column(Integer, nullable=False)
     content: Mapped[str] = mapped_column(Text, nullable=False)
+    content_hash: Mapped[str | None] = mapped_column(String(64))
     # embedding column added via Alembic migration with pgvector extension
     node_type: Mapped[str | None] = mapped_column(String(100))
     node_name: Mapped[str | None] = mapped_column(String(255))

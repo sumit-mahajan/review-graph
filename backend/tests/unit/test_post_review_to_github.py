@@ -1,4 +1,5 @@
 """Tests for PostReviewToGithubUseCase."""
+
 from datetime import UTC, datetime
 from unittest.mock import AsyncMock
 from uuid import uuid4
@@ -132,9 +133,7 @@ async def test_post_review_skips_when_already_posted() -> None:
     inst_repo._installations[installation.installation_id] = installation
 
     poster = AsyncMock()
-    use_case = PostReviewToGithubUseCase(
-        review_repo, repo_repo, inst_repo, poster
-    )
+    use_case = PostReviewToGithubUseCase(review_repo, repo_repo, inst_repo, poster)
     updated = await use_case.execute(review)
     assert updated.posted_to_github is True
     poster.post_pull_request_review.assert_not_awaited()

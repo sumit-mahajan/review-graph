@@ -1,0 +1,78 @@
+{
+  "id": "test_01",
+  "category": "test",
+  "title": "Add username normalizer and extend formatter test suite",
+  "author": "eval-bot",
+  "base_sha": "0000000000000000000000000000000000000000",
+  "head_sha": "1111111111111111111111111111111111111111",
+  "base_branch": "main",
+  "head_branch": "feature",
+  "changed_files": [
+    {
+      "path": "app/utils/formatters.py",
+      "status": "modified",
+      "additions": 6,
+      "deletions": 0
+    },
+    {
+      "path": "tests/test_formatters.py",
+      "status": "modified",
+      "additions": 4,
+      "deletions": 0
+    }
+  ],
+  "context_units": [
+    {
+      "file_path": "app/utils/formatters.py",
+      "node_type": "module",
+      "node_name": "formatters",
+      "start_line": 1,
+      "end_line": 13,
+      "body_old": "import re\n\n\ndef slugify(text: str) -> str:\n    \"\"\"Convert text to a URL-safe slug.\"\"\"\n    text = text.lower().strip()\n    return re.sub(r\"[^a-z0-9]+\", \"-\", text).strip(\"-\")\n",
+      "body_new": "import re\n\n\ndef slugify(text: str) -> str:\n    \"\"\"Convert text to a URL-safe slug.\"\"\"\n    text = text.lower().strip()\n    return re.sub(r\"[^a-z0-9]+\", \"-\", text).strip(\"-\")\n\n\ndef normalize_username(username: str) -> str:\n    \"\"\"Lowercase, strip surrounding whitespace, remove disallowed characters.\"\"\"\n    username = username.strip().lower()\n    return re.sub(r\"[^a-z0-9_.-]\", \"\", username)\n",
+      "diff_patch": "--- a/app/utils/formatters.py\n+++ b/app/utils/formatters.py\n@@ -5,3 +5,9 @@\n     \"\"\"Convert text to a URL-safe slug.\"\"\"\n     text = text.lower().strip()\n     return re.sub(r\"[^a-z0-9]+\", \"-\", text).strip(\"-\")\n+\n+\n+def normalize_username(username: str) -> str:\n+    \"\"\"Lowercase, strip surrounding whitespace, remove disallowed characters.\"\"\"\n+    username = username.strip().lower()\n+    return re.sub(r\"[^a-z0-9_.-]\", \"\", username)\n",
+      "language": "python"
+    },
+    {
+      "file_path": "tests/test_formatters.py",
+      "node_type": "module",
+      "node_name": "test_formatters",
+      "start_line": 1,
+      "end_line": 14,
+      "body_old": "import pytest\nfrom app.utils.formatters import slugify\n\n\ndef test_slugify_basic():\n    assert slugify(\"Hello World\") == \"hello-world\"\n\n\ndef test_slugify_special_chars():\n    assert slugify(\"foo!@#bar\") == \"foo-bar\"\n",
+      "body_new": "import pytest\nfrom app.utils.formatters import slugify\n\n\ndef test_slugify_basic():\n    assert slugify(\"Hello World\") == \"hello-world\"\n\n\ndef test_slugify_special_chars():\n    assert slugify(\"foo!@#bar\") == \"foo-bar\"\n\n\ndef test_normalize_username_placeholder():\n    assert True\n",
+      "diff_patch": "--- a/tests/test_formatters.py\n+++ b/tests/test_formatters.py\n@@ -8,3 +8,7 @@\n \n def test_slugify_special_chars():\n     assert slugify(\"foo!@#bar\") == \"foo-bar\"\n+\n+\n+def test_normalize_username_placeholder():\n+    assert True\n",
+      "language": "python"
+    }
+  ],
+  "raw_diff_chunks": [
+    {
+      "file_path": "app/utils/formatters.py",
+      "patch": "--- a/app/utils/formatters.py\n+++ b/app/utils/formatters.py\n@@ -5,3 +5,9 @@\n     \"\"\"Convert text to a URL-safe slug.\"\"\"\n     text = text.lower().strip()\n     return re.sub(r\"[^a-z0-9]+\", \"-\", text).strip(\"-\")\n+\n+\n+def normalize_username(username: str) -> str:\n+    \"\"\"Lowercase, strip surrounding whitespace, remove disallowed characters.\"\"\"\n+    username = username.strip().lower()\n+    return re.sub(r\"[^a-z0-9_.-]\", \"\", username)\n",
+      "language": "python"
+    },
+    {
+      "file_path": "tests/test_formatters.py",
+      "patch": "--- a/tests/test_formatters.py\n+++ b/tests/test_formatters.py\n@@ -8,3 +8,7 @@\n \n def test_slugify_special_chars():\n     assert slugify(\"foo!@#bar\") == \"foo-bar\"\n+\n+\n+def test_normalize_username_placeholder():\n+    assert True\n",
+      "language": "python"
+    }
+  ],
+  "expected_findings": [
+    {
+      "category": "test",
+      "file_path": "app/utils/formatters.py",
+      "line_start": 10,
+      "line_end": 10,
+      "title": "New public function normalize_username added with no test coverage",
+      "rationale": "normalize_username contains non-trivial character-filtering logic but the test suite has no test for it. Edge cases such as empty strings, unicode input, strings that are all disallowed characters, and leading/trailing dots are untested."
+    },
+    {
+      "category": "test",
+      "file_path": "tests/test_formatters.py",
+      "line_start": 14,
+      "line_end": 14,
+      "title": "Vacuous assertion — test always passes regardless of behaviour",
+      "rationale": "assert True never fails, even if normalize_username raises an exception or is deleted entirely. The test must call the function and assert its return value against expected output."
+    }
+  ]
+}

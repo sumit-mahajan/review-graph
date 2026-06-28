@@ -1,9 +1,10 @@
 """Tests for SynthesisAgent — deduplication and summary."""
+
 from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 
-from infrastructure.ai.agents.base_agent import AgentFinding, FindingSchema
+from infrastructure.ai.agents.base_agent import FindingSchema
 from infrastructure.ai.agents.synthesis_agent import SynthesisAgent, SynthesisOutput
 from infrastructure.ai.graph.state import AgentFinding as StateAgentFinding
 from tests.fixtures.sample_diff import make_state

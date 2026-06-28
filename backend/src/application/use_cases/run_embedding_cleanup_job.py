@@ -1,6 +1,7 @@
 """
 RunEmbeddingCleanupJobUseCase — deletes pgvector rows for a closed PR job row.
 """
+
 from datetime import UTC, datetime, timedelta
 from uuid import UUID
 

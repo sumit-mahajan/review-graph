@@ -1,0 +1,59 @@
+{
+  "id": "py_sec_02",
+  "category": "security",
+  "title": "Add password hashing and profile fetch",
+  "author": "eval-bot",
+  "base_sha": "0000000000000000000000000000000000000000",
+  "head_sha": "1111111111111111111111111111111111111111",
+  "base_branch": "main",
+  "head_branch": "feature/profile",
+  "changed_files": [
+    { "path": "app/account.py", "status": "added", "additions": 14, "deletions": 0 }
+  ],
+  "context_units": [
+    {
+      "file_path": "app/account.py",
+      "node_type": "module",
+      "node_name": "account",
+      "start_line": 1,
+      "end_line": 14,
+      "body_old": "",
+      "body_new": "import hashlib\nimport requests\n\nAPI_TOKEN = \"EVAL_FAKE_HARDCODED_API_TOKEN\"\n\n\ndef hash_password(password):\n    return hashlib.md5(password.encode()).hexdigest()\n\n\ndef fetch_profile(user_id):\n    url = \"https://api.example.com/users/\" + str(user_id)\n    headers = {\"Authorization\": \"Bearer \" + API_TOKEN}\n    return requests.get(url, headers=headers, verify=False).json()\n",
+      "diff_patch": "@@ -0,0 +1,14 @@\n+import hashlib\n+import requests\n+\n+API_TOKEN = \"EVAL_FAKE_HARDCODED_API_TOKEN\"\n+\n+\n+def hash_password(password):\n+    return hashlib.md5(password.encode()).hexdigest()\n+\n+\n+def fetch_profile(user_id):\n+    url = \"https://api.example.com/users/\" + str(user_id)\n+    headers = {\"Authorization\": \"Bearer \" + API_TOKEN}\n+    return requests.get(url, headers=headers, verify=False).json()",
+      "language": "python"
+    }
+  ],
+  "raw_diff_chunks": [
+    {
+      "file_path": "app/account.py",
+      "patch": "@@ -0,0 +1,14 @@\n+import hashlib\n+import requests\n+\n+API_TOKEN = \"EVAL_FAKE_HARDCODED_API_TOKEN\"\n+\n+\n+def hash_password(password):\n+    return hashlib.md5(password.encode()).hexdigest()\n+\n+\n+def fetch_profile(user_id):\n+    url = \"https://api.example.com/users/\" + str(user_id)\n+    headers = {\"Authorization\": \"Bearer \" + API_TOKEN}\n+    return requests.get(url, headers=headers, verify=False).json()",
+      "language": "python"
+    }
+  ],
+  "expected_findings": [
+    {
+      "category": "security",
+      "file_path": "app/account.py",
+      "line_start": 4,
+      "line_end": 4,
+      "title": "Hardcoded API secret in source",
+      "rationale": "A live secret token is hardcoded in the module; secrets must come from environment/secret storage, not source control."
+    },
+    {
+      "category": "security",
+      "file_path": "app/account.py",
+      "line_start": 8,
+      "line_end": 8,
+      "title": "Weak password hashing with MD5",
+      "rationale": "MD5 is cryptographically broken and unsuitable for password hashing; a salted KDF such as bcrypt/argon2 is required."
+    },
+    {
+      "category": "security",
+      "file_path": "app/account.py",
+      "line_start": 14,
+      "line_end": 14,
+      "title": "TLS certificate verification disabled",
+      "rationale": "requests is called with verify=False, disabling certificate validation and exposing the call to MITM attacks."
+    }
+  ]
+}

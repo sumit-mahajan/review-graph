@@ -1,9 +1,12 @@
 """Helpers for parsing unified diff patches."""
+
 from __future__ import annotations
 
 import re
+from typing import TYPE_CHECKING
 
-from domain.services.i_pr_fetcher import FilePatch
+if TYPE_CHECKING:
+    from domain.services.i_pr_fetcher import FilePatch
 
 
 def extract_changed_lines(patch: str) -> set[int]:

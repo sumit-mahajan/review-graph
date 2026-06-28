@@ -2,7 +2,7 @@ from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from uuid import UUID
 
-from domain.entities.review import Finding, Review
+from domain.entities.review import Review
 from domain.value_objects.agent_type import AgentType
 from domain.value_objects.severity import Severity
 
@@ -58,7 +58,5 @@ class IReviewRepository(ABC):
         """Set posted_to_github = True after comments are published."""
 
     @abstractmethod
-    async def update_finding_comment_ids(
-        self, updates: list[tuple[UUID, int]]
-    ) -> None:
+    async def update_finding_comment_ids(self, updates: list[tuple[UUID, int]]) -> None:
         """Persist GitHub comment IDs returned after posting inline comments."""

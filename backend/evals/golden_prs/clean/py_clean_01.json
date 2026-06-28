@@ -1,0 +1,34 @@
+{
+  "id": "py_clean_01",
+  "category": "clean",
+  "title": "Add token and dedup helpers",
+  "author": "eval-bot",
+  "base_sha": "0000000000000000000000000000000000000000",
+  "head_sha": "1111111111111111111111111111111111111111",
+  "base_branch": "main",
+  "head_branch": "feature/helpers",
+  "changed_files": [
+    { "path": "app/helpers.py", "status": "added", "additions": 11, "deletions": 0 }
+  ],
+  "context_units": [
+    {
+      "file_path": "app/helpers.py",
+      "node_type": "module",
+      "node_name": "helpers",
+      "start_line": 1,
+      "end_line": 11,
+      "body_old": "",
+      "body_new": "import secrets\n\n\ndef generate_token(num_bytes: int = 32) -> str:\n    \"\"\"Return a URL-safe random token.\"\"\"\n    return secrets.token_urlsafe(num_bytes)\n\n\ndef unique_sorted(items: list[int]) -> list[int]:\n    \"\"\"Return the unique values of items in ascending order.\"\"\"\n    return sorted(set(items))\n",
+      "diff_patch": "@@ -0,0 +1,11 @@\n+import secrets\n+\n+\n+def generate_token(num_bytes: int = 32) -> str:\n+    \"\"\"Return a URL-safe random token.\"\"\"\n+    return secrets.token_urlsafe(num_bytes)\n+\n+\n+def unique_sorted(items: list[int]) -> list[int]:\n+    \"\"\"Return the unique values of items in ascending order.\"\"\"\n+    return sorted(set(items))",
+      "language": "python"
+    }
+  ],
+  "raw_diff_chunks": [
+    {
+      "file_path": "app/helpers.py",
+      "patch": "@@ -0,0 +1,11 @@\n+import secrets\n+\n+\n+def generate_token(num_bytes: int = 32) -> str:\n+    \"\"\"Return a URL-safe random token.\"\"\"\n+    return secrets.token_urlsafe(num_bytes)\n+\n+\n+def unique_sorted(items: list[int]) -> list[int]:\n+    \"\"\"Return the unique values of items in ascending order.\"\"\"\n+    return sorted(set(items))",
+      "language": "python"
+    }
+  ],
+  "expected_findings": []
+}

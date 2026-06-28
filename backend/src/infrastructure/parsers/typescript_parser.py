@@ -1,3 +1,5 @@
+from typing import Any
+
 from infrastructure.parsers.base_parser import TreeSitterParser
 
 # Supports both JavaScript and TypeScript
@@ -13,7 +15,7 @@ class TypeScriptParser(TreeSitterParser):
     def _lang_names(self) -> frozenset[str]:
         return _NAMES
 
-    def _get_language(self):
+    def _get_language(self) -> Any:
         import tree_sitter_typescript as tsts  # noqa: PLC0415
         from tree_sitter import Language  # noqa: PLC0415
 
@@ -25,7 +27,7 @@ class JavaScriptParser(TreeSitterParser):
     def _lang_names(self) -> frozenset[str]:
         return _NAMES
 
-    def _get_language(self):
+    def _get_language(self) -> Any:
         import tree_sitter_javascript as tsjs  # noqa: PLC0415
         from tree_sitter import Language  # noqa: PLC0415
 

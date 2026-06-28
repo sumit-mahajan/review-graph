@@ -1,7 +1,7 @@
-from enum import Enum
+from enum import StrEnum
 
 
-class AgentType(str, Enum):
+class AgentType(StrEnum):
     SECURITY = "security"
     PERF = "perf"
     ARCH = "arch"

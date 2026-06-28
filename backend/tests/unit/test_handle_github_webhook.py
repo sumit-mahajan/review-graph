@@ -11,7 +11,6 @@ from domain.entities.job import ReviewJob
 from domain.entities.repository import Repository
 from domain.value_objects.job_status import JobStatus
 
-
 FIXTURES = Path(__file__).resolve().parents[1] / "fixtures"
 
 

@@ -1,0 +1,56 @@
+{
+  "id": "arch_02",
+  "category": "arch",
+  "title": "Implement checkout service with cart and inventory management",
+  "author": "eval-bot",
+  "base_sha": "0000000000000000000000000000000000000000",
+  "head_sha": "1111111111111111111111111111111111111111",
+  "base_branch": "main",
+  "head_branch": "feature",
+  "changed_files": [
+    {
+      "path": "services/checkout.py",
+      "status": "modified",
+      "additions": 14,
+      "deletions": 8
+    }
+  ],
+  "context_units": [
+    {
+      "file_path": "services/checkout.py",
+      "node_type": "module",
+      "node_name": "checkout",
+      "start_line": 1,
+      "end_line": 27,
+      "body_old": "from decimal import Decimal\nfrom app.models import Cart, Inventory, Order, db\n\n\ndef process_checkout(user_id: str, cart_items: list[dict]) -> dict:\n    total = Decimal(\"0\")\n    order_lines = []\n    for item in cart_items:\n        product = db.session.query(Inventory).filter_by(sku=item[\"sku\"]).first()\n        if not product or product.stock < item[\"quantity\"]:\n            return {\"error\": f\"Out of stock: {item['sku']}\"}\n        product.stock -= item[\"quantity\"]\n        line_total = Decimal(str(product.price)) * item[\"quantity\"]\n        total += line_total\n        order_lines.append(\n            {\"sku\": item[\"sku\"], \"qty\": item[\"quantity\"], \"price\": str(product.price)}\n        )\n    order = Order(user_id=user_id, total=str(total), lines=order_lines)\n    db.session.add(order)\n    db.session.commit()\n    return {\"order_id\": str(order.id), \"total\": str(total)}\n",
+      "body_new": "from decimal import Decimal\nfrom flask import g, request\nfrom app.models import Cart, EmailLog, Inventory, Order, db\n\n\ndef process_checkout() -> dict:\n    user_id = request.json[\"user_id\"]\n    cart_items = db.session.query(Cart).filter_by(user_id=user_id).all()\n    total = Decimal(\"0\")\n    order_lines = []\n    for item in cart_items:\n        product = db.session.query(Inventory).filter_by(sku=item.sku).first()\n        if not product or product.stock < item.quantity:\n            return {\"error\": f\"Out of stock: {item.sku}\"}\n        product.stock -= item.quantity\n        line_total = Decimal(str(product.price)) * item.quantity\n        total += line_total\n        order_lines.append(\n            {\"sku\": item.sku, \"qty\": item.quantity, \"price\": str(product.price)}\n        )\n    order = Order(user_id=user_id, total=str(total), lines=order_lines)\n    db.session.add(order)\n    db.session.flush()\n    email_body = f\"Thank you for your order #{order.id}. Total: ${total}\"\n    db.session.add(EmailLog(to=g.user.email, subject=\"Order Confirmation\", body=email_body))\n    db.session.commit()\n    return {\"order_id\": str(order.id), \"total\": str(total)}\n",
+      "diff_patch": "--- a/services/checkout.py\n+++ b/services/checkout.py\n@@ -1,21 +1,27 @@\n from decimal import Decimal\n-from app.models import Cart, Inventory, Order, db\n+from flask import g, request\n+from app.models import Cart, EmailLog, Inventory, Order, db\n \n \n-def process_checkout(user_id: str, cart_items: list[dict]) -> dict:\n+def process_checkout() -> dict:\n+    user_id = request.json[\"user_id\"]\n+    cart_items = db.session.query(Cart).filter_by(user_id=user_id).all()\n     total = Decimal(\"0\")\n     order_lines = []\n     for item in cart_items:\n-        product = db.session.query(Inventory).filter_by(sku=item[\"sku\"]).first()\n-        if not product or product.stock < item[\"quantity\"]:\n-            return {\"error\": f\"Out of stock: {item['sku']}\"}\n-        product.stock -= item[\"quantity\"]\n-        line_total = Decimal(str(product.price)) * item[\"quantity\"]\n+        product = db.session.query(Inventory).filter_by(sku=item.sku).first()\n+        if not product or product.stock < item.quantity:\n+            return {\"error\": f\"Out of stock: {item.sku}\"}\n+        product.stock -= item.quantity\n+        line_total = Decimal(str(product.price)) * item.quantity\n         total += line_total\n         order_lines.append(\n-            {\"sku\": item[\"sku\"], \"qty\": item[\"quantity\"], \"price\": str(product.price)}\n+            {\"sku\": item.sku, \"qty\": item.quantity, \"price\": str(product.price)}\n         )\n     order = Order(user_id=user_id, total=str(total), lines=order_lines)\n     db.session.add(order)\n+    db.session.flush()\n+    email_body = f\"Thank you for your order #{order.id}. Total: ${total}\"\n+    db.session.add(EmailLog(to=g.user.email, subject=\"Order Confirmation\", body=email_body))\n     db.session.commit()\n     return {\"order_id\": str(order.id), \"total\": str(total)}\n",
+      "language": "python"
+    }
+  ],
+  "raw_diff_chunks": [
+    {
+      "file_path": "services/checkout.py",
+      "patch": "--- a/services/checkout.py\n+++ b/services/checkout.py\n@@ -1,21 +1,27 @@\n from decimal import Decimal\n-from app.models import Cart, Inventory, Order, db\n+from flask import g, request\n+from app.models import Cart, EmailLog, Inventory, Order, db\n \n \n-def process_checkout(user_id: str, cart_items: list[dict]) -> dict:\n+def process_checkout() -> dict:\n+    user_id = request.json[\"user_id\"]\n+    cart_items = db.session.query(Cart).filter_by(user_id=user_id).all()\n     total = Decimal(\"0\")\n     order_lines = []\n     for item in cart_items:\n-        product = db.session.query(Inventory).filter_by(sku=item[\"sku\"]).first()\n-        if not product or product.stock < item[\"quantity\"]:\n-            return {\"error\": f\"Out of stock: {item['sku']}\"}\n-        product.stock -= item[\"quantity\"]\n-        line_total = Decimal(str(product.price)) * item[\"quantity\"]\n+        product = db.session.query(Inventory).filter_by(sku=item.sku).first()\n+        if not product or product.stock < item.quantity:\n+            return {\"error\": f\"Out of stock: {item.sku}\"}\n+        product.stock -= item.quantity\n+        line_total = Decimal(str(product.price)) * item.quantity\n         total += line_total\n         order_lines.append(\n-            {\"sku\": item[\"sku\"], \"qty\": item[\"quantity\"], \"price\": str(product.price)}\n+            {\"sku\": item.sku, \"qty\": item.quantity, \"price\": str(product.price)}\n         )\n     order = Order(user_id=user_id, total=str(total), lines=order_lines)\n     db.session.add(order)\n+    db.session.flush()\n+    email_body = f\"Thank you for your order #{order.id}. Total: ${total}\"\n+    db.session.add(EmailLog(to=g.user.email, subject=\"Order Confirmation\", body=email_body))\n     db.session.commit()\n     return {\"order_id\": str(order.id), \"total\": str(total)}\n",
+      "language": "python"
+    }
+  ],
+  "expected_findings": [
+    {
+      "category": "arch",
+      "file_path": "services/checkout.py",
+      "line_start": 7,
+      "line_end": 7,
+      "title": "Flask request object accessed directly inside the service layer",
+      "rationale": "The service function reads from Flask's HTTP request context, coupling business logic to the web framework. Services should receive plain arguments so they remain independently testable outside a request cycle."
+    },
+    {
+      "category": "arch",
+      "file_path": "services/checkout.py",
+      "line_start": 24,
+      "line_end": 24,
+      "title": "Email notification concern embedded in the checkout service",
+      "rationale": "The checkout service constructs and persists an EmailLog record, violating single-responsibility. Email notification belongs in a separate notification service invoked by the caller after checkout succeeds."
+    }
+  ]
+}

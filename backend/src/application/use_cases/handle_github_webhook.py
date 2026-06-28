@@ -42,7 +42,10 @@ class HandleGithubWebhookUseCase:
         if parsed_event == WebhookEventType.PING:
             return WebhookResult(accepted=True, job_enqueued=False, message="pong")
 
-        if parsed_event in {WebhookEventType.INSTALLATION, WebhookEventType.INSTALLATION_REPOSITORIES}:
+        if parsed_event in {
+            WebhookEventType.INSTALLATION,
+            WebhookEventType.INSTALLATION_REPOSITORIES,
+        }:
             data = _parse_installation_payload(payload)
             if data.action in {"created", "added"}:
                 await self._sync_installation.execute(
@@ -166,10 +169,7 @@ def _parse_installation_payload(payload: dict[str, Any]) -> InstallationWebhookD
     account = installation.get("account") or {}
 
     account_type = str(account.get("type", "User")).lower()
-    if account_type == "organization":
-        normalized_type = "org"
-    else:
-        normalized_type = "user"
+    normalized_type = "org" if account_type == "organization" else "user"
 
     return InstallationWebhookData(
         action=action,

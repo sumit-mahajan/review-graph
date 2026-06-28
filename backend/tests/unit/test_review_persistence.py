@@ -1,4 +1,5 @@
 """Tests for review + finding persistence using in-memory repo."""
+
 from datetime import UTC, datetime
 from uuid import uuid4
 
@@ -79,7 +80,9 @@ class InMemoryReviewRepository(IReviewRepository):
                 return r
         return None
 
-    async def list_by_repo(self, repository_id: object, *, page: int = 1, limit: int = 20) -> tuple[list[Review], int]:
+    async def list_by_repo(
+        self, repository_id: object, *, page: int = 1, limit: int = 20
+    ) -> tuple[list[Review], int]:
         items = [r for r in self._reviews.values() if r.repository_id == repository_id]
         total = len(items)
         offset = (page - 1) * limit
@@ -89,24 +92,31 @@ class InMemoryReviewRepository(IReviewRepository):
         review = self._reviews.get(review_id)
         if review is None:
             raise EntityNotFoundError(f"Review {review_id} not found")
-        from dataclasses import replace
         updated = Review(
-            id=review.id, job_id=review.job_id, repository_id=review.repository_id,
-            pr_number=review.pr_number, head_sha=review.head_sha, pr_url=review.pr_url,
-            summary=review.summary, total_findings=review.total_findings,
-            critical_count=review.critical_count, high_count=review.high_count,
-            medium_count=review.medium_count, low_count=review.low_count,
-            info_count=review.info_count, agents_run=review.agents_run,
-            langfuse_trace_id=review.langfuse_trace_id, posted_to_github=True,
-            created_at=review.created_at, updated_at=datetime.now(UTC),
+            id=review.id,
+            job_id=review.job_id,
+            repository_id=review.repository_id,
+            pr_number=review.pr_number,
+            head_sha=review.head_sha,
+            pr_url=review.pr_url,
+            summary=review.summary,
+            total_findings=review.total_findings,
+            critical_count=review.critical_count,
+            high_count=review.high_count,
+            medium_count=review.medium_count,
+            low_count=review.low_count,
+            info_count=review.info_count,
+            agents_run=review.agents_run,
+            langfuse_trace_id=review.langfuse_trace_id,
+            posted_to_github=True,
+            created_at=review.created_at,
+            updated_at=datetime.now(UTC),
             findings=review.findings,
         )
         self._reviews[review_id] = updated
         return updated
 
-    async def update_finding_comment_ids(
-        self, updates: list[tuple[object, int]]
-    ) -> None:
+    async def update_finding_comment_ids(self, updates: list[tuple[object, int]]) -> None:
         for finding_id, comment_id in updates:
             for review in self._reviews.values():
                 for i, finding in enumerate(review.findings):
@@ -171,8 +181,15 @@ async def test_create_review_persists_findings() -> None:
 async def test_mark_posted_to_github() -> None:
     repo = InMemoryReviewRepository()
     params = CreateReviewParams(
-        job_id=uuid4(), repository_id=uuid4(), pr_number=1, head_sha="a" * 40,
-        pr_url="u", summary=None, agents_run=[], langfuse_trace_id=None, findings=[]
+        job_id=uuid4(),
+        repository_id=uuid4(),
+        pr_number=1,
+        head_sha="a" * 40,
+        pr_url="u",
+        summary=None,
+        agents_run=[],
+        langfuse_trace_id=None,
+        findings=[],
     )
     review = await repo.create(params)
     assert review.posted_to_github is False
@@ -187,10 +204,19 @@ async def test_list_by_repo_paginates() -> None:
     repo_id = uuid4()
 
     for i in range(5):
-        await repo.create(CreateReviewParams(
-            job_id=uuid4(), repository_id=repo_id, pr_number=i, head_sha="a" * 40,
-            pr_url="u", summary=None, agents_run=[], langfuse_trace_id=None, findings=[]
-        ))
+        await repo.create(
+            CreateReviewParams(
+                job_id=uuid4(),
+                repository_id=repo_id,
+                pr_number=i,
+                head_sha="a" * 40,
+                pr_url="u",
+                summary=None,
+                agents_run=[],
+                langfuse_trace_id=None,
+                findings=[],
+            )
+        )
 
     page1, total = await repo.list_by_repo(repo_id, page=1, limit=3)
     assert total == 5

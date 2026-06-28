@@ -1,0 +1,39 @@
+{
+  "id": "clean_03",
+  "category": "clean",
+  "title": "Expand payment processor test coverage with failure and edge cases",
+  "author": "eval-bot",
+  "base_sha": "0000000000000000000000000000000000000000",
+  "head_sha": "1111111111111111111111111111111111111111",
+  "base_branch": "main",
+  "head_branch": "feature",
+  "changed_files": [
+    {
+      "path": "tests/test_payments.py",
+      "status": "modified",
+      "additions": 25,
+      "deletions": 1
+    }
+  ],
+  "context_units": [
+    {
+      "file_path": "tests/test_payments.py",
+      "node_type": "module",
+      "node_name": "test_payments",
+      "start_line": 1,
+      "end_line": 36,
+      "body_old": "import pytest\nfrom unittest.mock import MagicMock\nfrom app.payments.processor import PaymentProcessor\n\n\ndef test_charge_success():\n    gateway = MagicMock()\n    gateway.charge.return_value = {\"status\": \"ok\", \"transaction_id\": \"txn_123\"}\n    proc = PaymentProcessor(gateway)\n    result = proc.charge(amount=50_00, currency=\"USD\", token=\"tok_abc\")\n    assert result[\"status\"] == \"ok\"\n    assert result[\"transaction_id\"] == \"txn_123\"\n",
+      "body_new": "import pytest\nfrom unittest.mock import MagicMock\nfrom app.payments.processor import PaymentError, PaymentProcessor\n\n\ndef test_charge_success():\n    gateway = MagicMock()\n    gateway.charge.return_value = {\"status\": \"ok\", \"transaction_id\": \"txn_123\"}\n    proc = PaymentProcessor(gateway)\n    result = proc.charge(amount=50_00, currency=\"USD\", token=\"tok_abc\")\n    assert result[\"status\"] == \"ok\"\n    assert result[\"transaction_id\"] == \"txn_123\"\n\n\ndef test_charge_gateway_failure_raises():\n    gateway = MagicMock()\n    gateway.charge.side_effect = RuntimeError(\"network timeout\")\n    proc = PaymentProcessor(gateway)\n    with pytest.raises(PaymentError, match=\"network timeout\"):\n        proc.charge(amount=10_00, currency=\"USD\", token=\"tok_xyz\")\n\n\ndef test_charge_zero_amount_rejected():\n    gateway = MagicMock()\n    proc = PaymentProcessor(gateway)\n    with pytest.raises(ValueError, match=\"amount must be positive\"):\n        proc.charge(amount=0, currency=\"USD\", token=\"tok_xyz\")\n    gateway.charge.assert_not_called()\n\n\ndef test_charge_negative_amount_rejected():\n    gateway = MagicMock()\n    proc = PaymentProcessor(gateway)\n    with pytest.raises(ValueError, match=\"amount must be positive\"):\n        proc.charge(amount=-1, currency=\"USD\", token=\"tok_xyz\")\n    gateway.charge.assert_not_called()\n",
+      "diff_patch": "--- a/tests/test_payments.py\n+++ b/tests/test_payments.py\n@@ -1,6 +1,6 @@\n import pytest\n from unittest.mock import MagicMock\n-from app.payments.processor import PaymentProcessor\n+from app.payments.processor import PaymentError, PaymentProcessor\n \n \n def test_charge_success():\n@@ -10,3 +10,27 @@\n     result = proc.charge(amount=50_00, currency=\"USD\", token=\"tok_abc\")\n     assert result[\"status\"] == \"ok\"\n     assert result[\"transaction_id\"] == \"txn_123\"\n+\n+\n+def test_charge_gateway_failure_raises():\n+    gateway = MagicMock()\n+    gateway.charge.side_effect = RuntimeError(\"network timeout\")\n+    proc = PaymentProcessor(gateway)\n+    with pytest.raises(PaymentError, match=\"network timeout\"):\n+        proc.charge(amount=10_00, currency=\"USD\", token=\"tok_xyz\")\n+\n+\n+def test_charge_zero_amount_rejected():\n+    gateway = MagicMock()\n+    proc = PaymentProcessor(gateway)\n+    with pytest.raises(ValueError, match=\"amount must be positive\"):\n+        proc.charge(amount=0, currency=\"USD\", token=\"tok_xyz\")\n+    gateway.charge.assert_not_called()\n+\n+\n+def test_charge_negative_amount_rejected():\n+    gateway = MagicMock()\n+    proc = PaymentProcessor(gateway)\n+    with pytest.raises(ValueError, match=\"amount must be positive\"):\n+        proc.charge(amount=-1, currency=\"USD\", token=\"tok_xyz\")\n+    gateway.charge.assert_not_called()\n",
+      "language": "python"
+    }
+  ],
+  "raw_diff_chunks": [
+    {
+      "file_path": "tests/test_payments.py",
+      "patch": "--- a/tests/test_payments.py\n+++ b/tests/test_payments.py\n@@ -1,6 +1,6 @@\n import pytest\n from unittest.mock import MagicMock\n-from app.payments.processor import PaymentProcessor\n+from app.payments.processor import PaymentError, PaymentProcessor\n \n \n def test_charge_success():\n@@ -10,3 +10,27 @@\n     result = proc.charge(amount=50_00, currency=\"USD\", token=\"tok_abc\")\n     assert result[\"status\"] == \"ok\"\n     assert result[\"transaction_id\"] == \"txn_123\"\n+\n+\n+def test_charge_gateway_failure_raises():\n+    gateway = MagicMock()\n+    gateway.charge.side_effect = RuntimeError(\"network timeout\")\n+    proc = PaymentProcessor(gateway)\n+    with pytest.raises(PaymentError, match=\"network timeout\"):\n+        proc.charge(amount=10_00, currency=\"USD\", token=\"tok_xyz\")\n+\n+\n+def test_charge_zero_amount_rejected():\n+    gateway = MagicMock()\n+    proc = PaymentProcessor(gateway)\n+    with pytest.raises(ValueError, match=\"amount must be positive\"):\n+        proc.charge(amount=0, currency=\"USD\", token=\"tok_xyz\")\n+    gateway.charge.assert_not_called()\n+\n+\n+def test_charge_negative_amount_rejected():\n+    gateway = MagicMock()\n+    proc = PaymentProcessor(gateway)\n+    with pytest.raises(ValueError, match=\"amount must be positive\"):\n+        proc.charge(amount=-1, currency=\"USD\", token=\"tok_xyz\")\n+    gateway.charge.assert_not_called()\n",
+      "language": "python"
+    }
+  ],
+  "expected_findings": []
+}

@@ -1,23 +1,22 @@
 """Tests for WorkerDispatcher — routing and error handling."""
+
 import json
 from datetime import UTC, datetime
-from unittest.mock import AsyncMock, patch
+from unittest.mock import patch
 from uuid import uuid4
 
 import pytest
 
+from application.use_cases.cleanup_embeddings import CleanupEmbeddingsUseCase
+from application.use_cases.run_review_pipeline import RunReviewPipelineUseCase
 from domain.entities.job import ReviewJob
-from domain.services.i_agent_orchestrator import OrchestratorResult
 from domain.value_objects.job_status import JobStatus
 from infrastructure.ai.stub_orchestrator import StubAgentOrchestrator
 from infrastructure.worker.dispatcher import WorkerDispatcher
 from tests.support.memory_repositories import (
     InMemoryEmbeddingCleanupRepository,
     InMemoryJobRepository,
-    InMemoryRepoRepository,
 )
-from application.use_cases.cleanup_embeddings import CleanupEmbeddingsUseCase
-from application.use_cases.run_review_pipeline import RunReviewPipelineUseCase
 
 
 def _make_dispatcher() -> tuple[
@@ -63,13 +62,15 @@ async def test_dispatcher_routes_review_job() -> None:
     dispatcher, job_repo, _ = _make_dispatcher()
     job = _make_job(job_repo)
 
-    payload = json.dumps({
-        "job_type": "review",
-        "job_id": str(job.id),
-        "repository_id": str(job.repository_id),
-        "head_sha": job.head_sha,
-        "pr_number": job.pr_number,
-    })
+    payload = json.dumps(
+        {
+            "job_type": "review",
+            "job_id": str(job.id),
+            "repository_id": str(job.repository_id),
+            "head_sha": job.head_sha,
+            "pr_number": job.pr_number,
+        }
+    )
 
     result = await dispatcher.dispatch(payload)
     assert result is True
@@ -84,13 +85,15 @@ async def test_dispatcher_routes_cleanup_job() -> None:
     dispatcher, _, cleanup_repo = _make_dispatcher()
     repo_id = uuid4()
 
-    payload = json.dumps({
-        "job_type": "embedding_cleanup",
-        "job_id": None,
-        "repository_id": str(repo_id),
-        "head_sha": "c" * 40,
-        "pr_number": 7,
-    })
+    payload = json.dumps(
+        {
+            "job_type": "embedding_cleanup",
+            "job_id": None,
+            "repository_id": str(repo_id),
+            "head_sha": "c" * 40,
+            "pr_number": 7,
+        }
+    )
 
     result = await dispatcher.dispatch(payload)
     assert result is True
@@ -116,13 +119,15 @@ async def test_dispatcher_acks_unknown_job_type() -> None:
 @pytest.mark.asyncio
 async def test_dispatcher_acks_invalid_job_id_uuid() -> None:
     dispatcher, _, _ = _make_dispatcher()
-    payload = json.dumps({
-        "job_type": "review",
-        "job_id": "test",
-        "repository_id": str(uuid4()),
-        "head_sha": "b" * 40,
-        "pr_number": 1,
-    })
+    payload = json.dumps(
+        {
+            "job_type": "review",
+            "job_id": "test",
+            "repository_id": str(uuid4()),
+            "head_sha": "b" * 40,
+            "pr_number": 1,
+        }
+    )
     result = await dispatcher.dispatch(payload)
     assert result is True
 
@@ -132,14 +137,16 @@ async def test_dispatcher_backoff_skipped_on_first_attempt() -> None:
     dispatcher, job_repo, _ = _make_dispatcher()
     job = _make_job(job_repo)
 
-    payload = json.dumps({
-        "job_type": "review",
-        "job_id": str(job.id),
-        "repository_id": str(job.repository_id),
-        "head_sha": job.head_sha,
-        "pr_number": job.pr_number,
-        "attempt": 0,  # first attempt — no sleep
-    })
+    payload = json.dumps(
+        {
+            "job_type": "review",
+            "job_id": str(job.id),
+            "repository_id": str(job.repository_id),
+            "head_sha": job.head_sha,
+            "pr_number": job.pr_number,
+            "attempt": 0,  # first attempt — no sleep
+        }
+    )
 
     with patch("infrastructure.worker.dispatcher.asyncio.sleep") as mock_sleep:
         await dispatcher.dispatch(payload)

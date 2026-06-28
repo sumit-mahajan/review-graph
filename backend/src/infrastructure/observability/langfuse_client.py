@@ -5,12 +5,15 @@ Provides trace/span lifecycle management used by @trace_agent.
 Falls back to a no-op implementation when LANGFUSE_PUBLIC_KEY is not set
 so the app works in development without a Langfuse account.
 """
+
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
-from typing import Any
-from uuid import UUID
+from typing import TYPE_CHECKING, Any
+
+if TYPE_CHECKING:
+    from uuid import UUID
 
 
 @dataclass

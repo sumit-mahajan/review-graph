@@ -1,0 +1,56 @@
+{
+  "id": "perf_01",
+  "category": "perf",
+  "title": "Add dashboard statistics aggregation for all users",
+  "author": "eval-bot",
+  "base_sha": "0000000000000000000000000000000000000000",
+  "head_sha": "1111111111111111111111111111111111111111",
+  "base_branch": "main",
+  "head_branch": "feature",
+  "changed_files": [
+    {
+      "path": "app/analytics/dashboard.py",
+      "status": "modified",
+      "additions": 13,
+      "deletions": 20
+    }
+  ],
+  "context_units": [
+    {
+      "file_path": "app/analytics/dashboard.py",
+      "node_type": "module",
+      "node_name": "dashboard",
+      "start_line": 1,
+      "end_line": 18,
+      "body_old": "from app.models import db, User, Order\nfrom sqlalchemy import func\n\n\ndef get_dashboard_stats() -> list[dict]:\n    rows = (\n        db.session.query(\n            User.id,\n            User.email,\n            func.count(Order.id).label(\"order_count\"),\n            func.sum(Order.amount).label(\"total_spent\"),\n        )\n        .outerjoin(Order, Order.user_id == User.id)\n        .group_by(User.id, User.email)\n        .all()\n    )\n    return [\n        {\n            \"user_id\": r.id,\n            \"email\": r.email,\n            \"order_count\": r.order_count or 0,\n            \"total_spent\": float(r.total_spent or 0),\n        }\n        for r in rows\n    ]\n",
+      "body_new": "from app.models import db, User, Order\n\n\ndef get_dashboard_stats() -> list[dict]:\n    users = db.session.query(User).all()\n    stats = []\n    for user in users:\n        orders = db.session.query(Order).filter(Order.user_id == user.id).all()\n        total = sum(o.amount for o in orders)\n        stats.append(\n            {\n                \"user_id\": user.id,\n                \"email\": user.email,\n                \"order_count\": len(orders),\n                \"total_spent\": float(total),\n            }\n        )\n    return stats\n",
+      "diff_patch": "--- a/app/analytics/dashboard.py\n+++ b/app/analytics/dashboard.py\n@@ -1,25 +1,18 @@\n from app.models import db, User, Order\n-from sqlalchemy import func\n \n \n def get_dashboard_stats() -> list[dict]:\n-    rows = (\n-        db.session.query(\n-            User.id,\n-            User.email,\n-            func.count(Order.id).label(\"order_count\"),\n-            func.sum(Order.amount).label(\"total_spent\"),\n+    users = db.session.query(User).all()\n+    stats = []\n+    for user in users:\n+        orders = db.session.query(Order).filter(Order.user_id == user.id).all()\n+        total = sum(o.amount for o in orders)\n+        stats.append(\n+            {\n+                \"user_id\": user.id,\n+                \"email\": user.email,\n+                \"order_count\": len(orders),\n+                \"total_spent\": float(total),\n+            }\n         )\n-        .outerjoin(Order, Order.user_id == User.id)\n-        .group_by(User.id, User.email)\n-        .all()\n-    )\n-    return [\n-        {\n-            \"user_id\": r.id,\n-            \"email\": r.email,\n-            \"order_count\": r.order_count or 0,\n-            \"total_spent\": float(r.total_spent or 0),\n-        }\n-        for r in rows\n-    ]\n+    return stats\n",
+      "language": "python"
+    }
+  ],
+  "raw_diff_chunks": [
+    {
+      "file_path": "app/analytics/dashboard.py",
+      "patch": "--- a/app/analytics/dashboard.py\n+++ b/app/analytics/dashboard.py\n@@ -1,25 +1,18 @@\n from app.models import db, User, Order\n-from sqlalchemy import func\n \n \n def get_dashboard_stats() -> list[dict]:\n-    rows = (\n-        db.session.query(\n-            User.id,\n-            User.email,\n-            func.count(Order.id).label(\"order_count\"),\n-            func.sum(Order.amount).label(\"total_spent\"),\n+    users = db.session.query(User).all()\n+    stats = []\n+    for user in users:\n+        orders = db.session.query(Order).filter(Order.user_id == user.id).all()\n+        total = sum(o.amount for o in orders)\n+        stats.append(\n+            {\n+                \"user_id\": user.id,\n+                \"email\": user.email,\n+                \"order_count\": len(orders),\n+                \"total_spent\": float(total),\n+            }\n         )\n-        .outerjoin(Order, Order.user_id == User.id)\n-        .group_by(User.id, User.email)\n-        .all()\n-    )\n-    return [\n-        {\n-            \"user_id\": r.id,\n-            \"email\": r.email,\n-            \"order_count\": r.order_count or 0,\n-            \"total_spent\": float(r.total_spent or 0),\n-        }\n-        for r in rows\n-    ]\n+    return stats\n",
+      "language": "python"
+    }
+  ],
+  "expected_findings": [
+    {
+      "category": "perf",
+      "file_path": "app/analytics/dashboard.py",
+      "line_start": 5,
+      "line_end": 5,
+      "title": "Full table scan loads every user row into application memory",
+      "rationale": "db.session.query(User).all() fetches the entire users table regardless of scale. On large datasets this exhausts memory and is slow. The previous implementation used a single JOIN."
+    },
+    {
+      "category": "perf",
+      "file_path": "app/analytics/dashboard.py",
+      "line_start": 8,
+      "line_end": 8,
+      "title": "N+1 query: one SELECT against orders per user inside a loop",
+      "rationale": "For every user in the result set a separate SELECT is issued to the orders table. With U users the system executes U+1 round-trips instead of one aggregating JOIN."
+    }
+  ]
+}

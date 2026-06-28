@@ -1,0 +1,56 @@
+{
+  "id": "arch_03",
+  "category": "arch",
+  "title": "Add Portfolio domain model with rebalance and ownership logic",
+  "author": "eval-bot",
+  "base_sha": "0000000000000000000000000000000000000000",
+  "head_sha": "1111111111111111111111111111111111111111",
+  "base_branch": "main",
+  "head_branch": "feature",
+  "changed_files": [
+    {
+      "path": "domain/portfolio.py",
+      "status": "added",
+      "additions": 36,
+      "deletions": 0
+    }
+  ],
+  "context_units": [
+    {
+      "file_path": "domain/portfolio.py",
+      "node_type": "module",
+      "node_name": "portfolio",
+      "start_line": 1,
+      "end_line": 36,
+      "body_old": "",
+      "body_new": "from __future__ import annotations\nfrom dataclasses import dataclass, field\nfrom typing import List\n\nfrom fastapi import HTTPException\nfrom repositories.portfolio_repo import PortfolioRepository\n\n\n@dataclass\nclass Holding:\n    ticker: str\n    shares: float\n    avg_cost: float\n\n\n@dataclass\nclass Portfolio:\n    owner_id: str\n    holdings: List[Holding] = field(default_factory=list)\n\n    def total_value(self, prices: dict[str, float]) -> float:\n        return sum(h.shares * prices.get(h.ticker, 0.0) for h in self.holdings)\n\n    def rebalance(self, target_weights: dict[str, float]) -> list[dict]:\n        repo = PortfolioRepository()\n        current = repo.get_current_allocations(self.owner_id)\n        trades = []\n        for ticker, weight in target_weights.items():\n            current_pct = current.get(ticker, 0.0)\n            if abs(current_pct - weight) > 0.01:\n                trades.append({\"ticker\": ticker, \"action\": \"rebalance\", \"target\": weight})\n        return trades\n\n    def assert_owner(self, requesting_user_id: str) -> None:\n        if self.owner_id != requesting_user_id:\n            raise HTTPException(status_code=403, detail=\"Not your portfolio\")\n",
+      "diff_patch": "@@ -0,0 +1,36 @@\n+from __future__ import annotations\n+from dataclasses import dataclass, field\n+from typing import List\n+\n+from fastapi import HTTPException\n+from repositories.portfolio_repo import PortfolioRepository\n+\n+\n+@dataclass\n+class Holding:\n+    ticker: str\n+    shares: float\n+    avg_cost: float\n+\n+\n+@dataclass\n+class Portfolio:\n+    owner_id: str\n+    holdings: List[Holding] = field(default_factory=list)\n+\n+    def total_value(self, prices: dict[str, float]) -> float:\n+        return sum(h.shares * prices.get(h.ticker, 0.0) for h in self.holdings)\n+\n+    def rebalance(self, target_weights: dict[str, float]) -> list[dict]:\n+        repo = PortfolioRepository()\n+        current = repo.get_current_allocations(self.owner_id)\n+        trades = []\n+        for ticker, weight in target_weights.items():\n+            current_pct = current.get(ticker, 0.0)\n+            if abs(current_pct - weight) > 0.01:\n+                trades.append({\"ticker\": ticker, \"action\": \"rebalance\", \"target\": weight})\n+        return trades\n+\n+    def assert_owner(self, requesting_user_id: str) -> None:\n+        if self.owner_id != requesting_user_id:\n+            raise HTTPException(status_code=403, detail=\"Not your portfolio\")\n",
+      "language": "python"
+    }
+  ],
+  "raw_diff_chunks": [
+    {
+      "file_path": "domain/portfolio.py",
+      "patch": "@@ -0,0 +1,36 @@\n+from __future__ import annotations\n+from dataclasses import dataclass, field\n+from typing import List\n+\n+from fastapi import HTTPException\n+from repositories.portfolio_repo import PortfolioRepository\n+\n+\n+@dataclass\n+class Holding:\n+    ticker: str\n+    shares: float\n+    avg_cost: float\n+\n+\n+@dataclass\n+class Portfolio:\n+    owner_id: str\n+    holdings: List[Holding] = field(default_factory=list)\n+\n+    def total_value(self, prices: dict[str, float]) -> float:\n+        return sum(h.shares * prices.get(h.ticker, 0.0) for h in self.holdings)\n+\n+    def rebalance(self, target_weights: dict[str, float]) -> list[dict]:\n+        repo = PortfolioRepository()\n+        current = repo.get_current_allocations(self.owner_id)\n+        trades = []\n+        for ticker, weight in target_weights.items():\n+            current_pct = current.get(ticker, 0.0)\n+            if abs(current_pct - weight) > 0.01:\n+                trades.append({\"ticker\": ticker, \"action\": \"rebalance\", \"target\": weight})\n+        return trades\n+\n+    def assert_owner(self, requesting_user_id: str) -> None:\n+        if self.owner_id != requesting_user_id:\n+            raise HTTPException(status_code=403, detail=\"Not your portfolio\")\n",
+      "language": "python"
+    }
+  ],
+  "expected_findings": [
+    {
+      "category": "arch",
+      "file_path": "domain/portfolio.py",
+      "line_start": 5,
+      "line_end": 5,
+      "title": "Framework type (FastAPI HTTPException) leaks into the domain model",
+      "rationale": "Importing HTTPException into a domain model couples business logic to the FastAPI HTTP layer. The domain should raise its own exceptions (e.g. PermissionError) and the API layer should translate them to HTTP responses."
+    },
+    {
+      "category": "arch",
+      "file_path": "domain/portfolio.py",
+      "line_start": 6,
+      "line_end": 6,
+      "title": "Domain model imports from the repository layer — illegal dependency direction",
+      "rationale": "domain/ must not import from repositories/. Repositories depend on domain types, not the reverse. This creates a circular import and prevents testing the domain in isolation."
+    }
+  ]
+}

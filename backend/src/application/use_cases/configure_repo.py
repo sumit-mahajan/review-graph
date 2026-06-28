@@ -1,8 +1,8 @@
 from uuid import UUID
 
+from api.schemas.dashboard import AgentConfigDTO, UpdateAgentConfigRequest
 from application.dtos.dashboard_mappers import to_agent_config_dto
 from application.use_cases.list_repos import get_repo_for_user
-from api.schemas.dashboard import AgentConfigDTO, UpdateAgentConfigRequest
 from domain.entities.user import User
 from domain.repositories.i_agent_config_repository import (
     IAgentConfigRepository,

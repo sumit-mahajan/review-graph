@@ -1,12 +1,10 @@
 """BaseAgent — shared helpers for all specialist agents."""
-from __future__ import annotations
 
-from typing import Any
+from __future__ import annotations
 
 from pydantic import BaseModel
 
-from infrastructure.ai.gemini_client import GeminiClient
-from infrastructure.ai.graph.state import AgentFinding, ReviewState
+from infrastructure.ai.graph.state import AgentFinding
 
 
 class FindingSchema(BaseModel):

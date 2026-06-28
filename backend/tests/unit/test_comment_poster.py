@@ -1,4 +1,5 @@
 """Tests for GithubCommentPoster payload formatting."""
+
 from unittest.mock import AsyncMock, MagicMock
 
 import pytest
@@ -8,9 +9,7 @@ from infrastructure.github.comment_poster import GithubCommentPoster, _to_github
 
 
 def test_single_line_comment_payload() -> None:
-    payload = _to_github_comment(
-        ReviewComment(file_path="a.py", line=10, body="issue")
-    )
+    payload = _to_github_comment(ReviewComment(file_path="a.py", line=10, body="issue"))
     assert payload == {
         "path": "a.py",
         "body": "issue",

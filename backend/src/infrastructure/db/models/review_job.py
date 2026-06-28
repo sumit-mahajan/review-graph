@@ -10,7 +10,9 @@ from infrastructure.db.models.base import Base, TimestampMixin
 
 class ReviewJobORM(Base, TimestampMixin):
     __tablename__ = "review_jobs"
-    __table_args__ = (UniqueConstraint("repository_id", "head_sha", name="uq_review_jobs_repo_head"),)
+    __table_args__ = (
+        UniqueConstraint("repository_id", "head_sha", name="uq_review_jobs_repo_head"),
+    )
 
     id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     repository_id: Mapped[uuid.UUID] = mapped_column(

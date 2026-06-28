@@ -1,23 +1,30 @@
 """
 Abstract base for tree-sitter parsers. Shared extraction logic lives here.
 """
+
 from __future__ import annotations
+
+from typing import Any
 
 from domain.services.i_code_parser import ICodeParser, ParsedNode
 
 # Node type labels for tree-sitter grammar types → our canonical names
-FUNCTION_TYPES = frozenset([
-    "function_definition",    # Python
-    "function_declaration",   # JS/TS
-    "method_definition",      # JS/TS class methods
-    "arrow_function",         # JS/TS
-    "async_function_expression",
-])
+FUNCTION_TYPES = frozenset(
+    [
+        "function_definition",  # Python
+        "function_declaration",  # JS/TS
+        "method_definition",  # JS/TS class methods
+        "arrow_function",  # JS/TS
+        "async_function_expression",
+    ]
+)
 
-CLASS_TYPES = frozenset([
-    "class_definition",       # Python
-    "class_declaration",      # JS/TS
-])
+CLASS_TYPES = frozenset(
+    [
+        "class_definition",  # Python
+        "class_declaration",  # JS/TS
+    ]
+)
 
 ANONYMOUS_NAMES = frozenset(["anonymous", "", None])
 
@@ -30,7 +37,7 @@ class TreeSitterParser(ICodeParser):
 
         self._parser = Parser(self._get_language())
 
-    def _get_language(self):  # type: ignore[return]
+    def _get_language(self) -> Any:
         raise NotImplementedError
 
     @property
@@ -56,17 +63,21 @@ class TreeSitterParser(ICodeParser):
             canonical_type = "function" if node.type in FUNCTION_TYPES else "class"
             name = self._extract_name(node, source_bytes)
             if name and name not in ANONYMOUS_NAMES:
-                body = source_bytes[node.start_byte:node.end_byte].decode("utf-8", errors="replace")
+                body = source_bytes[node.start_byte : node.end_byte].decode(
+                    "utf-8", errors="replace"
+                )
                 # Trim very large functions to stay within token budget
                 if len(body) > 12000:
                     body = body[:6000] + "\n...[truncated]...\n" + body[-1000:]
-                out.append(ParsedNode(
-                    node_type=canonical_type,
-                    node_name=name,
-                    start_line=node.start_point[0] + 1,
-                    end_line=node.end_point[0] + 1,
-                    body=body,
-                ))
+                out.append(
+                    ParsedNode(
+                        node_type=canonical_type,
+                        node_name=name,
+                        start_line=node.start_point[0] + 1,
+                        end_line=node.end_point[0] + 1,
+                        body=body,
+                    )
+                )
         for child in node.children:
             self._walk(child, source_bytes, out)
 
@@ -77,5 +88,6 @@ class TreeSitterParser(ICodeParser):
         assert isinstance(node, Node)
         name_node = node.child_by_field_name("name")
         if name_node is not None:
-            return source_bytes[name_node.start_byte:name_node.end_byte].decode("utf-8", errors="replace")
+            byte_slice = source_bytes[name_node.start_byte : name_node.end_byte]
+            return byte_slice.decode("utf-8", errors="replace")
         return None

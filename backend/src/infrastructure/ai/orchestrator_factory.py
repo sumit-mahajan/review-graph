@@ -1,16 +1,15 @@
 """Build IAgentOrchestrator for the worker (real pipeline or stub fallback)."""
+
 from __future__ import annotations
 
+from typing import TYPE_CHECKING
+
 import structlog
-from sqlalchemy.ext.asyncio import AsyncSession
 
 from application.use_cases.assemble_review_package import AssembleReviewPackageUseCase
-from domain.repositories.i_job_repository import IJobRepository
-from domain.services.i_agent_orchestrator import IAgentOrchestrator
 from infrastructure.ai.gemini_client import GeminiClient
 from infrastructure.ai.langgraph_orchestrator import LanggraphOrchestrator
 from infrastructure.ai.stub_orchestrator import StubAgentOrchestrator
-from infrastructure.config.settings import Settings
 from infrastructure.db.repositories.installation_repository import PostgresInstallationRepository
 from infrastructure.db.repositories.repo_repository import PostgresRepoRepository
 from infrastructure.github.app_client import GithubAppClient
@@ -18,6 +17,13 @@ from infrastructure.github.pr_fetcher import GitHubPrFetcher
 from infrastructure.observability.langfuse_client import build_langfuse_client
 from infrastructure.vector.embedding_service import EmbeddingService
 from infrastructure.vector.pgvector_store import PgvectorStore
+
+if TYPE_CHECKING:
+    from sqlalchemy.ext.asyncio import AsyncSession
+
+    from domain.repositories.i_job_repository import IJobRepository
+    from domain.services.i_agent_orchestrator import IAgentOrchestrator
+    from infrastructure.config.settings import Settings
 
 logger = structlog.get_logger()
 

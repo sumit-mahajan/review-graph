@@ -1,17 +1,22 @@
 """PostReviewToGithubUseCase — publishes review summary + inline comments to GitHub."""
+
 from __future__ import annotations
+
+from typing import TYPE_CHECKING
 
 import structlog
 
-from domain.entities.review import Finding, Review
 from domain.errors import EntityNotFoundError
-from domain.repositories.i_installation_repository import IInstallationRepository
-from domain.repositories.i_repo_repository import IRepoRepository
-from domain.repositories.i_review_repository import IReviewRepository
 from domain.services.i_github_comment_poster import IGithubCommentPoster, ReviewComment
-from domain.services.i_pr_fetcher import IPrFetcher
-from domain.value_objects.severity import Severity, severity_meets_minimum
 from domain.utils.diff_utils import build_diff_line_index, is_comment_on_diff
+from domain.value_objects.severity import Severity, severity_meets_minimum
+
+if TYPE_CHECKING:
+    from domain.entities.review import Finding, Review
+    from domain.repositories.i_installation_repository import IInstallationRepository
+    from domain.repositories.i_repo_repository import IRepoRepository
+    from domain.repositories.i_review_repository import IReviewRepository
+    from domain.services.i_pr_fetcher import IPrFetcher
 
 logger = structlog.get_logger()
 
@@ -55,8 +60,7 @@ class PostReviewToGithubUseCase:
             )
 
         postable = [
-            f for f in review.findings
-            if severity_meets_minimum(f.severity, self._min_severity)
+            f for f in review.findings if severity_meets_minimum(f.severity, self._min_severity)
         ]
 
         inline_findings = [f for f in postable if f.line_start is not None]
@@ -100,11 +104,13 @@ class PostReviewToGithubUseCase:
 
         if inline_findings and result.comment_ids:
             posted_findings = inline_findings[: len(result.comment_ids)]
-            updates = list(zip(
-                (f.id for f in posted_findings),
-                result.comment_ids,
-                strict=False,
-            ))
+            updates = list(
+                zip(
+                    (f.id for f in posted_findings),
+                    result.comment_ids,
+                    strict=False,
+                )
+            )
             if updates:
                 await self._review_repo.update_finding_comment_ids(updates)
 

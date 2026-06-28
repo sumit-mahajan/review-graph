@@ -1,0 +1,56 @@
+{
+  "id": "sec_01",
+  "category": "security",
+  "title": "Add user profile lookup endpoint with Stripe integration",
+  "author": "eval-bot",
+  "base_sha": "0000000000000000000000000000000000000000",
+  "head_sha": "1111111111111111111111111111111111111111",
+  "base_branch": "main",
+  "head_branch": "feature",
+  "changed_files": [
+    {
+      "path": "app/auth/users.py",
+      "status": "modified",
+      "additions": 4,
+      "deletions": 3
+    }
+  ],
+  "context_units": [
+    {
+      "file_path": "app/auth/users.py",
+      "node_type": "module",
+      "node_name": "users",
+      "start_line": 1,
+      "end_line": 17,
+      "body_old": "from flask import request, jsonify\nfrom app.db import get_connection\n\n\ndef get_user_profile():\n    user_id = request.args.get(\"user_id\", \"\")\n    conn = get_connection()\n    cursor = conn.cursor()\n    cursor.execute(\n        \"SELECT id, email, full_name FROM users WHERE id = %s\", (user_id,)\n    )\n    row = cursor.fetchone()\n    conn.close()\n    if not row:\n        return jsonify({\"error\": \"User not found\"}), 404\n    return jsonify({\"id\": row[0], \"email\": row[1], \"name\": row[2]})\n",
+      "body_new": "from flask import request, jsonify\nfrom app.db import get_connection\n\nSTRIPE_WEBHOOK_SECRET = \"EVAL_FAKE_WEBHOOK_SECRET\"\n\n\ndef get_user_profile():\n    user_id = request.args.get(\"user_id\", \"\")\n    conn = get_connection()\n    cursor = conn.cursor()\n    query = \"SELECT id, email, full_name FROM users WHERE id = '\" + user_id + \"'\"\n    cursor.execute(query)\n    row = cursor.fetchone()\n    conn.close()\n    if not row:\n        return jsonify({\"error\": \"User not found\"}), 404\n    return jsonify({\"id\": row[0], \"email\": row[1], \"name\": row[2]})\n",
+      "diff_patch": "--- a/app/auth/users.py\n+++ b/app/auth/users.py\n@@ -1,14 +1,15 @@\n from flask import request, jsonify\n from app.db import get_connection\n+\n+STRIPE_WEBHOOK_SECRET = \"EVAL_FAKE_WEBHOOK_SECRET\"\n \n \n def get_user_profile():\n     user_id = request.args.get(\"user_id\", \"\")\n     conn = get_connection()\n     cursor = conn.cursor()\n-    cursor.execute(\n-        \"SELECT id, email, full_name FROM users WHERE id = %s\", (user_id,)\n-    )\n+    query = \"SELECT id, email, full_name FROM users WHERE id = '\" + user_id + \"'\"\n+    cursor.execute(query)\n     row = cursor.fetchone()\n     conn.close()\n     if not row:\n",
+      "language": "python"
+    }
+  ],
+  "raw_diff_chunks": [
+    {
+      "file_path": "app/auth/users.py",
+      "patch": "--- a/app/auth/users.py\n+++ b/app/auth/users.py\n@@ -1,14 +1,15 @@\n from flask import request, jsonify\n from app.db import get_connection\n+\n+STRIPE_WEBHOOK_SECRET = \"EVAL_FAKE_WEBHOOK_SECRET\"\n \n \n def get_user_profile():\n     user_id = request.args.get(\"user_id\", \"\")\n     conn = get_connection()\n     cursor = conn.cursor()\n-    cursor.execute(\n-        \"SELECT id, email, full_name FROM users WHERE id = %s\", (user_id,)\n-    )\n+    query = \"SELECT id, email, full_name FROM users WHERE id = '\" + user_id + \"'\"\n+    cursor.execute(query)\n     row = cursor.fetchone()\n     conn.close()\n     if not row:\n",
+      "language": "python"
+    }
+  ],
+  "expected_findings": [
+    {
+      "category": "security",
+      "file_path": "app/auth/users.py",
+      "line_start": 4,
+      "line_end": 4,
+      "title": "Hardcoded Stripe webhook secret committed to source",
+      "rationale": "A live Stripe webhook secret is stored as a module-level constant in plaintext. Any repository reader can use it to forge webhook events and trigger fraudulent payment flows."
+    },
+    {
+      "category": "security",
+      "file_path": "app/auth/users.py",
+      "line_start": 11,
+      "line_end": 11,
+      "title": "SQL injection via string-concatenated query",
+      "rationale": "user_id from the query string is concatenated directly into the SQL statement. An attacker can terminate the string and append arbitrary SQL clauses, leaking or modifying all rows."
+    }
+  ]
+}

@@ -1,0 +1,51 @@
+{
+  "id": "py_perf_01",
+  "category": "perf",
+  "title": "Add order summary and duplicate detection",
+  "author": "eval-bot",
+  "base_sha": "0000000000000000000000000000000000000000",
+  "head_sha": "1111111111111111111111111111111111111111",
+  "base_branch": "main",
+  "head_branch": "feature/summaries",
+  "changed_files": [
+    { "path": "app/reporting.py", "status": "added", "additions": 19, "deletions": 0 }
+  ],
+  "context_units": [
+    {
+      "file_path": "app/reporting.py",
+      "node_type": "module",
+      "node_name": "reporting",
+      "start_line": 1,
+      "end_line": 19,
+      "body_old": "",
+      "body_new": "from models import Order, User\n\n\ndef order_summaries(session, user_ids):\n    summaries = []\n    for user_id in user_ids:\n        user = session.query(User).get(user_id)\n        orders = session.query(Order).filter(Order.user_id == user_id).all()\n        summaries.append({\"user\": user.name, \"order_count\": len(orders)})\n    return summaries\n\n\ndef find_duplicates(items):\n    dupes = []\n    for i in range(len(items)):\n        for j in range(len(items)):\n            if i != j and items[i] == items[j] and items[i] not in dupes:\n                dupes.append(items[i])\n    return dupes\n",
+      "diff_patch": "@@ -0,0 +1,19 @@\n+from models import Order, User\n+\n+\n+def order_summaries(session, user_ids):\n+    summaries = []\n+    for user_id in user_ids:\n+        user = session.query(User).get(user_id)\n+        orders = session.query(Order).filter(Order.user_id == user_id).all()\n+        summaries.append({\"user\": user.name, \"order_count\": len(orders)})\n+    return summaries\n+\n+\n+def find_duplicates(items):\n+    dupes = []\n+    for i in range(len(items)):\n+        for j in range(len(items)):\n+            if i != j and items[i] == items[j] and items[i] not in dupes:\n+                dupes.append(items[i])\n+    return dupes",
+      "language": "python"
+    }
+  ],
+  "raw_diff_chunks": [
+    {
+      "file_path": "app/reporting.py",
+      "patch": "@@ -0,0 +1,19 @@\n+from models import Order, User\n+\n+\n+def order_summaries(session, user_ids):\n+    summaries = []\n+    for user_id in user_ids:\n+        user = session.query(User).get(user_id)\n+        orders = session.query(Order).filter(Order.user_id == user_id).all()\n+        summaries.append({\"user\": user.name, \"order_count\": len(orders)})\n+    return summaries\n+\n+\n+def find_duplicates(items):\n+    dupes = []\n+    for i in range(len(items)):\n+        for j in range(len(items)):\n+            if i != j and items[i] == items[j] and items[i] not in dupes:\n+                dupes.append(items[i])\n+    return dupes",
+      "language": "python"
+    }
+  ],
+  "expected_findings": [
+    {
+      "category": "perf",
+      "file_path": "app/reporting.py",
+      "line_start": 6,
+      "line_end": 8,
+      "title": "N+1 query pattern in order_summaries",
+      "rationale": "Each loop iteration issues two queries per user; this should be a single joined/bulk query to avoid N+1 database round-trips."
+    },
+    {
+      "category": "perf",
+      "file_path": "app/reporting.py",
+      "line_start": 15,
+      "line_end": 18,
+      "title": "O(n^2) duplicate detection",
+      "rationale": "Nested loops plus a membership check make this O(n^2)/O(n^3); a set-based pass is O(n)."
+    }
+  ]
+}

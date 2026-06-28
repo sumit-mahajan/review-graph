@@ -1,12 +1,17 @@
 from collections.abc import AsyncGenerator
 
-from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
+from sqlalchemy.ext.asyncio import (
+    AsyncEngine,
+    AsyncSession,
+    async_sessionmaker,
+    create_async_engine,
+)
 
 from infrastructure.config.settings import Settings
 from infrastructure.db.database_url import normalize_async_database_url
 
 
-def create_engine(database_url: str):
+def create_engine(database_url: str) -> AsyncEngine:
     url, connect_args = normalize_async_database_url(database_url)
     return create_async_engine(
         url,

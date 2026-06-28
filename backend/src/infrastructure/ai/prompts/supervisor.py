@@ -22,11 +22,10 @@ Guidelines:
 
 def build_supervisor_prompt(meta: PRMetadata) -> str:
     file_summary = "\n".join(
-        f"  {f.path} ({f.status}, +{f.additions}/-{f.deletions})"
-        for f in meta.changed_files
+        f"  {f.path} ({f.status}, +{f.additions}/-{f.deletions})" for f in meta.changed_files
     )
     return (
-        f"PR #{meta.pr_number}: \"{meta.title}\" by {meta.author}\n\n"
+        f'PR #{meta.pr_number}: "{meta.title}" by {meta.author}\n\n'
         f"Changed files:\n{file_summary}\n\n"
         "Which specialist agents should review this PR?"
     )
