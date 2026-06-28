@@ -100,6 +100,8 @@ def write_json(score: EvalScore, path: Path) -> Path:
                 "fp": p.fp,
                 "fn": p.fn,
                 "routed_correctly": p.routed_correctly,
+                "missed_findings": p.missed_findings,
+                "spurious_findings": p.spurious_findings,
             }
             for p in score.pr_scores
         ],
@@ -135,6 +137,9 @@ async def persist(
         updated_at=now,
     )
     session.add(run)
+    # Flush so the eval_runs row exists in the DB before inserting eval_results
+    # rows that reference it via FK.
+    await session.flush()
     for p in score.pr_scores:
         session.add(
             EvalResultORM(

@@ -2,14 +2,17 @@
 LangGraph StateGraph for the multi-agent review pipeline.
 
 Flow:
-  START → supervisor → specialists (sequential active agents) → synthesis → END
+  START → supervisor → specialists (parallel active agents) → synthesis → END
 
-Specialist agents run sequentially in one node so findings accumulate reliably
-before synthesis (parallel fan-out caused synthesis to run with partial/empty state).
+Specialist agents run concurrently via asyncio.gather. All agents start from
+the same state snapshot (with RAG chunks pre-fetched in parallel), and their
+new findings are merged after all complete. This is safe because each agent
+only appends to findings — it never reads the findings its peers produced.
 """
 
 from __future__ import annotations
 
+import asyncio
 from collections.abc import Awaitable, Callable
 from typing import TYPE_CHECKING
 
@@ -45,15 +48,38 @@ def _make_specialists_runner(
     }
 
     async def run_specialists(state: ReviewState) -> ReviewState:
+        active: list[AgentType] = state.get("active_agents") or list(AgentType)
+        active_pairs = [(at, runners[at]) for at in active if at in runners]
+        if not active_pairs:
+            return state
+
+        # Pre-fetch RAG chunks for all active agents concurrently.
         rag_chunks = dict(state.get("rag_chunks") or {})
-        for agent_type in state.get("active_agents", list(AgentType)):
-            if rag_retriever is not None:
-                rag_chunks[agent_type.value] = await rag_retriever(state, agent_type)
-            state = {**state, "rag_chunks": rag_chunks}
-            runner = runners.get(agent_type)
-            if runner is not None:
-                state = await runner(state)
-        return state
+        if rag_retriever is not None:
+            rag_results = await asyncio.gather(
+                *[rag_retriever(state, at) for at, _ in active_pairs]
+            )
+            for (at, _), chunks in zip(active_pairs, rag_results):
+                rag_chunks[at.value] = chunks
+
+        # Snapshot state with all RAG chunks ready; every agent reads this.
+        state_with_rag = {**state, "rag_chunks": rag_chunks}
+        prior_findings = list(state_with_rag.get("findings") or [])
+        prior_len = len(prior_findings)
+
+        # Run all active agents concurrently.
+        agent_states: list[ReviewState] = await asyncio.gather(  # type: ignore[assignment]
+            *[runner(state_with_rag) for _, runner in active_pairs]
+        )
+
+        # Merge: each agent appended its own findings to prior_findings,
+        # so extract only the suffix each one added.
+        all_findings = list(prior_findings)
+        for agent_state in agent_states:
+            returned = list(agent_state.get("findings") or [])
+            all_findings.extend(returned[prior_len:])
+
+        return {**state_with_rag, "findings": all_findings}
 
     return run_specialists
 

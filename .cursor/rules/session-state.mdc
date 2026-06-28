@@ -27,14 +27,22 @@ alwaysApply: true
 
 ## Last Completed Step
 
-MVP feature build complete. F-08 Evaluation System committed (`7925222`); follow-up
-lint/format fixes + TS/Next.js golden fixtures committed this session.
+All MVP features committed. Post-MVP quality pass completed this session:
+- Parallel agent execution (asyncio.gather) — ~3-4× faster specialist phase
+- Synthesis quality gate + category recovery (arch/perf/test beats catch-all security)
+- Strengthened arch and perf agent prompts (concrete pattern lists)
+- Eval scorer FP bucketing fix (normalise pred.category before dict lookup)
+- Eval JSON artifact enriched with per-PR missed_findings and spurious_findings content
+- Eval DB FK fix (session.flush before child rows)
+- base_agent category normalisation (_clamp_category)
+
+All changes committed as `feat: post-MVP quality pass`.
 
 ---
 
 ## Current In-Progress
 
-—
+— (v1 complete)
 
 ---
 
@@ -45,11 +53,11 @@ lint/format fixes + TS/Next.js golden fixtures committed this session.
 | F-01 GitHub Webhook | DONE (committed) | |
 | F-05 Async Worker | DONE (committed) | Poison-pill fix: terminal jobs return ack=True |
 | F-07 Observability + DB | DONE (committed) | |
-| F-02 Multi-Agent Pipeline | DONE (committed) | |
-| F-04 Structured Review Output | DONE (committed) | Was built before F-03 (out of order; see retrospective) |
+| F-02 Multi-Agent Pipeline | DONE (committed) | +parallel exec, synthesis quality gate, category recovery |
+| F-04 Structured Review Output | DONE (committed) | |
 | F-03 Code Context & RAG | DONE (committed) | embed→pgvector, RAG per agent, Postgres cleanup repo |
 | F-06 Web Dashboard | DONE (committed) | |
-| F-08 Evaluation System | DONE (committed) | Golden-PR harness, matcher/scorer, eval tables, 30 fixtures (Python + TS) |
+| F-08 Evaluation System | DONE (committed) | 30 fixtures, correct FP bucketing, enriched JSON artifact, DB FK fix |
 
 ---
 
@@ -100,8 +108,8 @@ None.
 
 ## Next Immediate Action
 
-Production validation: install GitHub App on a real repo, trigger a PR review, confirm
-GitHub comments + dashboard + `make eval` baseline run.
+v1 shipped. Production validation: install GitHub App on a real repo, trigger a PR,
+confirm GitHub comments appear + dashboard shows the review + `make eval` baseline.
 
 ---
 

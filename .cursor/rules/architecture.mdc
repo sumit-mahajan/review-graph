@@ -195,10 +195,17 @@ redelivery. One consumer name (`worker-1`) — **single worker instance** in v1.
 - Failed attempt → job marked `failed`, dispatch returns false → message not acked.
 - Gemini 429 → retry inside `gemini_client.py` (2s / 8s / 32s) before the job fails.
 
-#### 6. Agents run one at a time per job ✅
+#### 6. Specialist agents run concurrently per job ✅
 
-LangGraph runs Supervisor → specialists → Synthesis **sequentially** (parallel fan-out
-broke synthesis). This also stays under Gemini free-tier RPM (10/min).
+LangGraph runs Supervisor → specialists (parallel) → Synthesis. All active specialist
+agents fire via `asyncio.gather` after RAG chunks are pre-fetched in parallel. Each agent
+reads the same state snapshot and appends only its own findings; the `run_specialists`
+node merges the suffix each agent added. Synthesis sees the complete finding set.
+
+Gemini free-tier impact: 4 concurrent calls per PR instead of 4 sequential — same 6 RPM
+total per review, just faster (~25s vs ~60-100s for the specialist phase). During eval,
+PRs still run sequentially so the burst is always ≤4 concurrent calls, well within
+10 RPM.
 
 #### Not in v1 (don't implement unless asked)
 

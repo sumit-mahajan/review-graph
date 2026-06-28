@@ -6,6 +6,8 @@ from pydantic import BaseModel
 
 from infrastructure.ai.graph.state import AgentFinding
 
+_VALID_CATEGORIES = {"security", "perf", "arch", "test"}
+
 
 class FindingSchema(BaseModel):
     severity: str
@@ -26,7 +28,7 @@ def findings_from_output(output: AgentOutput, agent_source: str) -> list[AgentFi
     return [
         AgentFinding(
             severity=_clamp_severity(f.severity),
-            category=f.category,
+            category=_clamp_category(f.category),
             agent_source=agent_source,
             file_path=f.file_path or "unknown",
             line_start=f.line_start,
@@ -42,3 +44,9 @@ def findings_from_output(output: AgentOutput, agent_source: str) -> list[AgentFi
 def _clamp_severity(s: str) -> str:
     valid = {"critical", "high", "medium", "low", "info"}
     return s.lower() if s.lower() in valid else "medium"
+
+
+def _clamp_category(c: str) -> str:
+    """Normalise LLM-returned category to a known lowercase value."""
+    normalised = (c or "").strip().lower()
+    return normalised if normalised in _VALID_CATEGORIES else "security"

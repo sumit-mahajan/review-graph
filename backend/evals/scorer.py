@@ -24,6 +24,11 @@ from evals.schema import GoldenPR
 CATEGORIES = [a.value for a in AgentType]  # security, perf, arch, test
 
 
+def _norm_cat(value: str) -> str:
+    """Normalize an LLM-returned category to lowercase for dict lookup."""
+    return (value or "").strip().lower()
+
+
 @dataclass
 class CategoryScore:
     category: str
@@ -56,6 +61,10 @@ class PRScore:
     fp: int
     fn: int
     routed_correctly: bool
+    # Full content of missed expected findings and spurious predictions,
+    # serialised as plain dicts so write_json can include them in the artifact.
+    missed_findings: list[dict] = field(default_factory=list)
+    spurious_findings: list[dict] = field(default_factory=list)
 
 
 @dataclass
@@ -113,10 +122,21 @@ def score(
             result.clean_fp_findings += spurious
             if spurious:
                 result.clean_prs_flagged += 1
+            spurious_dicts: list[dict] = []
             for pred in run.predicted:
-                bucket = result.per_category.get(pred.category)
+                # Normalise category before lookup so "Security" matches "security"
+                bucket = result.per_category.get(_norm_cat(pred.category))
                 if bucket is not None:
                     bucket.fp += 1
+                spurious_dicts.append({
+                    "category": pred.category,
+                    "severity": pred.severity,
+                    "file_path": pred.file_path,
+                    "line_start": pred.line_start,
+                    "line_end": pred.line_end,
+                    "title": pred.title,
+                    "description": pred.description,
+                })
             result.pr_scores.append(
                 PRScore(
                     golden_id=golden.id,
@@ -126,6 +146,7 @@ def score(
                     fp=spurious,
                     fn=0,
                     routed_correctly=True,
+                    spurious_findings=spurious_dicts,
                 )
             )
             continue
@@ -140,7 +161,8 @@ def score(
         bucket.tp += match.true_positives
         bucket.fn += match.false_negatives
         for pred in match.spurious:
-            spur_bucket = result.per_category.get(pred.category)
+            # Normalise category before lookup
+            spur_bucket = result.per_category.get(_norm_cat(pred.category))
             if spur_bucket is not None:
                 spur_bucket.fp += 1
 
@@ -148,6 +170,30 @@ def score(
         result.routing_total += 1
         if routed:
             result.routing_correct += 1
+
+        missed_dicts = [
+            {
+                "category": exp.category,
+                "file_path": exp.file_path,
+                "line_start": exp.line_start,
+                "line_end": exp.line_end,
+                "title": exp.title,
+                "rationale": exp.rationale,
+            }
+            for exp in match.missed
+        ]
+        spurious_flaw_dicts = [
+            {
+                "category": pred.category,
+                "severity": pred.severity,
+                "file_path": pred.file_path,
+                "line_start": pred.line_start,
+                "line_end": pred.line_end,
+                "title": pred.title,
+                "description": pred.description,
+            }
+            for pred in match.spurious
+        ]
 
         result.pr_scores.append(
             PRScore(
@@ -158,6 +204,8 @@ def score(
                 fp=match.false_positives,
                 fn=match.false_negatives,
                 routed_correctly=routed,
+                missed_findings=missed_dicts,
+                spurious_findings=spurious_flaw_dicts,
             )
         )
 

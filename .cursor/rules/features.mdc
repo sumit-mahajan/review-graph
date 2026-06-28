@@ -31,10 +31,13 @@ specialist agent; SynthesisAgent output posts to GitHub without contradiction er
 
 - **SupervisorAgent**: reads diff metadata (file types, change volume, modified paths) and decides which specialist agents to invoke; avoids running all agents on every PR
 - **SecurityAgent**: OWASP Top 10 violations, hardcoded secrets/credentials, injection flaws (SQL/command/path), insecure deserialization, use of vulnerable patterns
-- **PerfAgent**: N+1 query patterns, algorithmic complexity regressions, blocking I/O in async contexts, inefficient data structures, unnecessary re-renders (React)
-- **ArchAgent**: layer violations (e.g. DB calls in route handlers), tight coupling, circular dependencies, separation of concerns, naming and module boundary conventions
+- **PerfAgent**: N+1 query patterns, algorithmic complexity regressions, blocking I/O in async contexts (time.sleep, requests, sync file I/O), inefficient data structures, unnecessary re-renders (React)
+- **ArchAgent**: layer boundary violations (DB/ORM in route handlers, infrastructure imports in domain/application layers), tight coupling, circular dependencies, DI violations, naming and module boundary conventions
 - **TestAgent**: missing tests for changed public functions, missing edge cases, poor/missing assertions, test-to-code ratio regression
 - **SynthesisAgent**: deduplicates findings across agents, assigns final severity (Critical / High / Medium / Low / Info), formats structured review with fix suggestions, resolves agent contradictions
+- **Parallel specialist execution**: all active specialist agents run concurrently via `asyncio.gather` (RAG chunks also pre-fetched in parallel); ~3-4× faster specialist phase vs sequential
+- **Synthesis quality gate**: findings must be demonstrably present in changed code with a citable line range; speculative or low-confidence findings are dropped before posting
+- **Category preservation**: synthesis preserves the specialist agent's category (`arch`/`perf`/`test` beats the catch-all `security`); code-level recovery overrides any LLM re-categorisation at the same file+line
 
 ### F-03 · Code Context & RAG `P1`
 
@@ -93,13 +96,16 @@ and token counts; all reviews and findings are queryable from the DB indefinitel
 
 ### F-08 · Evaluation System `P2`
 
-**Acceptance criteria:** `make eval` runs against all 20 golden PRs and reports
+**Acceptance criteria:** `make eval` runs against all 30 golden PRs and reports
 precision/recall per agent category; false positive rate is tracked per run.
 
-- Synthetic golden set: ~20 hand-crafted known-bad PRs covering each agent's domain
-- Langfuse datasets + LLM-as-judge scoring for each review run against golden set
-- CLI command `make eval` runs the full eval suite and reports precision/recall per category
-- Track false positive rate per agent category over time
+- Synthetic golden set: 30 hand-crafted known-bad PRs (Python + TypeScript) covering each agent's domain, plus 6 clean PRs
+- LLM-as-judge matching: two-stage rule prefilter (same category + file + line overlap) then Gemini judge for semantic match; greedy 1:1 assignment
+- CLI command `make eval` runs the full eval suite and reports precision/recall/F1 per category; `--category`, `--limit`, `--no-judge`, `--no-db` flags for targeted runs
+- JSON artifact (`evals/results/latest.json`) written after every run; includes per-PR `missed_findings` (full title + rationale of what was not found) and `spurious_findings` (full content of false positives) for actionable diagnosis without re-running
+- Correct FP bucketing: predicted category normalised to lowercase before per-category counter lookup so LLM capitalisation variations don't silently drop FP counts
+- DB persistence: `eval_runs` + `eval_results` tables (migration 0005); `session.flush()` before child rows to satisfy FK; `--no-db` flag skips persistence for quick runs
+- Track false positive rate on clean PRs separately from per-category precision
 
 ---
 
